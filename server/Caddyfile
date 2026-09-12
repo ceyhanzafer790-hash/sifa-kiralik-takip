@@ -19,3 +19,17 @@
 
     reverse_proxy api:8000
 }
+
+{$PWA_DOMAIN} {
+    encode zstd gzip
+    root * /srv/sifa-pwa
+    try_files {path} /index.html
+    file_server
+
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+    }
+}
