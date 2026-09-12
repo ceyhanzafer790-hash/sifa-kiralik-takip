@@ -1,0 +1,70 @@
+name: PWA Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, pwa-v0.24, pwa-web-compat-fix ]
+    paths:
+      - 'flutter_client/**'
+      - 'scripts/prepare_pwa.py'
+      - 'scripts/register_pwa_worker.py'
+      - 'scripts/sifa_service_worker.js'
+      - 'scripts/flutter_bootstrap_pwa.js'
+      - '.github/workflows/build-pwa.yml'
+
+jobs:
+  build-pwa:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Flutter kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Web platformunu hazırla
+        working-directory: flutter_client
+        run: |
+          flutter create --project-name sifa_kiralik_takip --platforms=web .
+          rm -f test/widget_test.dart
+          curl --fail --location --retry 3 \
+            https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js \
+            -o web/sql-wasm.js
+          curl --fail --location --retry 3 \
+            https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.wasm \
+            -o web/sql-wasm.wasm
+          cp ../scripts/flutter_bootstrap_pwa.js web/flutter_bootstrap.js
+          cp ../scripts/sifa_service_worker.js web/sifa_service_worker.js
+          python3 ../scripts/prepare_pwa.py
+          python3 ../scripts/register_pwa_worker.py
+
+      - name: Paketleri indir
+        working-directory: flutter_client
+        run: flutter pub get
+
+      - name: Drift kodunu üret
+        working-directory: flutter_client
+        run: dart run build_runner build
+
+      - name: Statik analiz
+        working-directory: flutter_client
+        run: flutter analyze --no-fatal-infos
+
+      - name: PWA web build üret
+        working-directory: flutter_client
+        run: flutter build web --release --dart-define=API_BASE_URL=https://api.sifains.com
+
+      - name: PWA paketini yayınla
+        uses: actions/upload-artifact@v4
+        with:
+          name: sifa-kiralik-takip-v0.24-pwa
+          path: flutter_client/build/web
+          if-no-files-found: error
+          retention-days: 30
