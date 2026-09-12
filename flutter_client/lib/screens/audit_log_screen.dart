@@ -478,26 +478,19 @@ Future<void> _openRelatedRecord(
           width: 650,
           child: SingleChildScrollView(
             child: SelectableText(
-              'Kullanıcı: ${row['user_name'] ?? 'Sistem'}
-'
-              'E-posta: ${row['user_email'] ?? '-'}
-'
-              'Kayıt türü: ${row['entity_type']}
-'
-              'Kayıt ID: ${row['entity_id']}
-'
-              'İşlem: ${row['action']}
-'
-              'Tarih: ${row['created_at']}
-
-'
+              'Kullanıcı: ${row['user_name'] ?? 'Sistem'}\n'
+              'E-posta: ${row['user_email'] ?? '-'}\n'
+              'Kayıt türü: ${row['entity_type']}\n'
+              'Kayıt ID: ${row['entity_id']}\n'
+              'İşlem: ${row['action']}\n'
+              'Tarih: ${row['created_at']}\n\n'
               '$payload',
             ),
           ),
         ),
         actions: [
           if (navigation != null &&
-              navigation!['target'] != 'none')
+              navigation['target'] != 'none')
             OutlinedButton.icon(
               onPressed: () {
                 Navigator.pop(dialogContext);

@@ -51,6 +51,7 @@ class LocalRentals extends Table {
 }
 
 
+@DataClassName('LocalAddress')
 class LocalAddresses extends Table {
   TextColumn get id => text()();
   TextColumn get customerId => text()();

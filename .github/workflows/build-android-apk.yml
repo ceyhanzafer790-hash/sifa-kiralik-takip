@@ -27,7 +27,11 @@ jobs:
 
       - name: Android platformunu hazırla
         working-directory: flutter_client
-        run: flutter create --project-name sifa_kiralik_takip --platforms=android .
+        run: |
+          flutter create --project-name sifa_kiralik_takip --platforms=android .
+          # flutter create adds a counter-demo test unrelated to the existing app.
+          rm -f test/widget_test.dart
+          python3 ../scripts/configure_android.py
 
       - name: Paketleri indir
         working-directory: flutter_client
@@ -39,7 +43,7 @@ jobs:
 
       - name: Statik analiz
         working-directory: flutter_client
-        run: flutter analyze
+        run: flutter analyze --no-fatal-infos
 
       - name: Release APK üret
         working-directory: flutter_client

@@ -110,7 +110,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     if (selected == null) return;
 
     setState(() {
-      customerId = selected!['id']?.toString();
+      customerId = selected['id']?.toString();
       customerName = selected['name']?.toString();
     });
   }

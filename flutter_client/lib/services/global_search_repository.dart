@@ -1,5 +1,3 @@
-import 'package:drift/drift.dart';
-
 import '../database/local_database.dart';
 import 'api_client.dart';
 import 'api_config.dart';
