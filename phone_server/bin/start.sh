@@ -48,7 +48,7 @@ ubuntu_bg bash -lc '
   export DB_SLOW_QUERY_MS=750
   export REQUIRED_RELEASE_PLATFORMS=android
   cd /opt/sifa-phone/server
-  nohup /opt/sifa-phone/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 >> /opt/sifa-phone/data/logs/api.log 2>&1 < /dev/null &
+  exec /opt/sifa-phone/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
 '
 for _ in $(seq 1 45); do
   curl -fsS http://127.0.0.1:8000/health >/dev/null 2>&1 && break
