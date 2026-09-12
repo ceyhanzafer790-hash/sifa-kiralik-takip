@@ -7,6 +7,9 @@ on:
     paths:
       - 'flutter_client/**'
       - 'scripts/prepare_pwa.py'
+      - 'scripts/register_pwa_worker.py'
+      - 'scripts/sifa_service_worker.js'
+      - 'scripts/flutter_bootstrap_pwa.js'
       - '.github/workflows/build-pwa.yml'
 
 jobs:
@@ -37,7 +40,10 @@ jobs:
           curl --fail --location --retry 3 \
             https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.wasm \
             -o web/sql-wasm.wasm
+          cp ../scripts/flutter_bootstrap_pwa.js web/flutter_bootstrap.js
+          cp ../scripts/sifa_service_worker.js web/sifa_service_worker.js
           python3 ../scripts/prepare_pwa.py
+          python3 ../scripts/register_pwa_worker.py
 
       - name: Paketleri indir
         working-directory: flutter_client
