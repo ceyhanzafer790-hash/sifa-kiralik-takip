@@ -38,6 +38,8 @@ def _files() -> list[tuple[str, str, Path, str]]:
         )
 
     for path in sorted(MIGRATIONS_DIR.glob("*.sql")):
+        if path == BOOTSTRAP_LEGACY:
+            continue
         match = MIGRATION_RE.match(path.name)
         if not match:
             raise RuntimeError(
