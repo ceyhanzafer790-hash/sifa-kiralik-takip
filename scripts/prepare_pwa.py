@@ -231,6 +231,11 @@ index = index.replace(
     '<title>sifa_kiralik_takip</title>',
     '<title>Şifa Kiralık Takip</title>',
 )
+index = index.replace(
+    '<script src="flutter_bootstrap.js" async></script>',
+    '<script src="sql-wasm.js"></script>\n'
+    '  <script src="flutter_bootstrap.js" async></script>',
+)
 index_path.write_text(index, encoding="utf-8")
 
-print("PWA compatibility layer and branding prepared.")
+print("PWA compatibility layer, local sql.js and branding prepared.")
