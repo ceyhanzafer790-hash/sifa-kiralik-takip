@@ -19,7 +19,7 @@ class DocumentApiService {
     required RentalDocumentType type,
     String? rentalMovementId,
   }) async {
-    final picked = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: [
         'pdf',
@@ -30,14 +30,10 @@ class DocumentApiService {
         'docx',
         'xlsx',
       ],
-      withData: true,
     );
 
-    if (picked == null || picked.files.isEmpty) return;
-    final file = picked.files.single;
-    if (file.bytes == null) {
-      throw StateError('Dosya belleğe okunamadı.');
-    }
+    if (file == null) return;
+    final bytes = await file.readAsBytes();
 
     final token = await auth.getToken();
     final request = http.MultipartRequest(
@@ -59,7 +55,7 @@ class DocumentApiService {
     request.files.add(
       http.MultipartFile.fromBytes(
         'file',
-        file.bytes!,
+        bytes,
         filename: file.name,
       ),
     );
@@ -75,7 +71,6 @@ class DocumentApiService {
       throw StateError(message);
     }
   }
-
 
   Future<void> uploadLocalFile({
     required String rentalRecordId,
