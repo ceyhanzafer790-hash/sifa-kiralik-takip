@@ -1,0 +1,56 @@
+name: PWA Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ pwa-v0.24 ]
+    paths:
+      - 'flutter_client/**'
+      - '.github/workflows/build-pwa.yml'
+
+jobs:
+  build-pwa:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Flutter kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Web platformunu hazırla
+        working-directory: flutter_client
+        run: |
+          flutter create --project-name sifa_kiralik_takip --platforms=web .
+          rm -f test/widget_test.dart
+
+      - name: Paketleri indir
+        working-directory: flutter_client
+        run: flutter pub get
+
+      - name: Drift kodunu üret
+        working-directory: flutter_client
+        run: dart run build_runner build
+
+      - name: Statik analiz
+        working-directory: flutter_client
+        run: flutter analyze --no-fatal-infos
+
+      - name: PWA web build üret
+        working-directory: flutter_client
+        run: flutter build web --release
+
+      - name: PWA paketini yayınla
+        uses: actions/upload-artifact@v4
+        with:
+          name: sifa-kiralik-takip-v0.24-pwa
+          path: flutter_client/build/web
+          if-no-files-found: error
+          retention-days: 30
