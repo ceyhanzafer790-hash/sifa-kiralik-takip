@@ -20,7 +20,7 @@ class OfflineDocumentQueue {
     required String documentType,
     String? rentalMovementId,
   }) async {
-    final picked = await FilePicker.pickFiles(
+    final file = await FilePicker.pickFile(
       type: FileType.custom,
       allowedExtensions: [
         'pdf',
@@ -31,16 +31,11 @@ class OfflineDocumentQueue {
         'docx',
         'xlsx',
       ],
-      withData: true,
     );
 
-    if (picked == null || picked.files.isEmpty) return null;
+    if (file == null) return null;
 
-    final file = picked.files.single;
-    final bytes = file.bytes;
-    if (bytes == null) {
-      throw StateError('Dosya güvenli yerel kuyruğa kopyalanamadı.');
-    }
+    final bytes = await file.readAsBytes();
 
     final supportDir = await getApplicationSupportDirectory();
     final queueDir = Directory(
