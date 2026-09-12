@@ -51,12 +51,14 @@ services:
       - api
     environment:
       API_DOMAIN: ${API_DOMAIN}
+      PWA_DOMAIN: ${PWA_DOMAIN:-app.sifains.com}
       PWA_ORIGIN: ${PWA_ORIGIN:-https://app.sifains.com}
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./server/Caddyfile:/etc/caddy/Caddyfile:ro
+      - /srv/sifa-pwa:/srv/sifa-pwa:ro
       - caddy_data:/data
       - caddy_config:/config
 
