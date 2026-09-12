@@ -22,6 +22,7 @@ ubuntu_run() {
 
 ubuntu_bg() {
   nohup proot-distro login ubuntu \
+    --no-kill-on-exit \
     --bind "$BASE:/opt/sifa-phone" \
     -- "$@" >> "$LOG_DIR/proot-api.log" 2>&1 < /dev/null &
   echo $! > "$BASE/api-proot.pid"
