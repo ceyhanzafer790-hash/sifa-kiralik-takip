@@ -3,7 +3,7 @@ name: PWA Build
 on:
   workflow_dispatch:
   push:
-    branches: [ pwa-v0.24, pwa-web-compat-fix ]
+    branches: [ main, pwa-v0.24, pwa-web-compat-fix ]
     paths:
       - 'flutter_client/**'
       - 'scripts/prepare_pwa.py'
@@ -31,6 +31,12 @@ jobs:
         run: |
           flutter create --project-name sifa_kiralik_takip --platforms=web .
           rm -f test/widget_test.dart
+          curl --fail --location --retry 3 \
+            https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.js \
+            -o web/sql-wasm.js
+          curl --fail --location --retry 3 \
+            https://cdn.jsdelivr.net/npm/sql.js@1.10.3/dist/sql-wasm.wasm \
+            -o web/sql-wasm.wasm
           python3 ../scripts/prepare_pwa.py
 
       - name: Paketleri indir
@@ -47,7 +53,7 @@ jobs:
 
       - name: PWA web build üret
         working-directory: flutter_client
-        run: flutter build web --release
+        run: flutter build web --release --dart-define=API_BASE_URL=https://api.sifains.com
 
       - name: PWA paketini yayınla
         uses: actions/upload-artifact@v4
