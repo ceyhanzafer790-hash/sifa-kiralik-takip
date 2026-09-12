@@ -1,0 +1,68 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: sifa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sifa_kiralik
+      POSTGRES_USER: sifa_app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sifa_app -d sifa_kiralik"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./server
+    container_name: sifa-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://sifa_app:${POSTGRES_PASSWORD}@db:5432/sifa_kiralik
+      JWT_SECRET: ${JWT_SECRET}
+      DOCUMENT_ROOT: /data/documents
+      IMPORT_ROOT: /data/import-inbox
+      BACKUP_STATUS_FILE: /backup-status/backup_status.json
+      LOG_ROOT: /data/logs
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DB_POOL_MIN_SIZE: ${DB_POOL_MIN_SIZE:-2}
+      DB_POOL_MAX_SIZE: ${DB_POOL_MAX_SIZE:-10}
+      DB_POOL_TIMEOUT_SECONDS: ${DB_POOL_TIMEOUT_SECONDS:-10}
+      DB_SLOW_QUERY_MS: ${DB_SLOW_QUERY_MS:-500}
+      REQUIRED_RELEASE_PLATFORMS: ${REQUIRED_RELEASE_PLATFORMS:-android,windows,ios}
+    volumes:
+      - documents_data:/data/documents
+      - import_inbox_data:/data/import-inbox
+      - logs_data:/data/logs
+      - /srv/sifa-backup:/backup-status:ro
+    expose:
+      - "8000"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sifa-caddy
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_DOMAIN: ${API_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./server/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  postgres_data:
+  documents_data:
+  import_inbox_data:
+  logs_data:
+  caddy_data:
+  caddy_config:

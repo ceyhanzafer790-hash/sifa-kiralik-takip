@@ -1,0 +1,60 @@
+name: Android APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+    paths:
+      - 'flutter_client/**'
+      - '.github/workflows/build-android-apk.yml'
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Kaynak kodu al
+        uses: actions/checkout@v4
+
+      - name: Flutter kur
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+
+      - name: Android platformunu hazırla
+        working-directory: flutter_client
+        run: flutter create --project-name sifa_kiralik_takip --platforms=android .
+
+      - name: Paketleri indir
+        working-directory: flutter_client
+        run: flutter pub get
+
+      - name: Drift kodunu üret
+        working-directory: flutter_client
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Statik analiz
+        working-directory: flutter_client
+        run: flutter analyze
+
+      - name: Release APK üret
+        working-directory: flutter_client
+        run: flutter build apk --release
+
+      - name: APK SHA-256
+        working-directory: flutter_client
+        run: sha256sum build/app/outputs/flutter-apk/app-release.apk | tee build/app/outputs/flutter-apk/app-release.apk.sha256
+
+      - name: APK dosyasını yayınla
+        uses: actions/upload-artifact@v4
+        with:
+          name: sifa-kiralik-takip-v0.24-android
+          path: |
+            flutter_client/build/app/outputs/flutter-apk/app-release.apk
+            flutter_client/build/app/outputs/flutter-apk/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 30

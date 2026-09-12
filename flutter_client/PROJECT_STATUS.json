@@ -1,0 +1,34 @@
+{
+  "project": "Şifa İnşaat Kiralık Malzeme Takibi",
+  "version": "0.24.0+24-testfix1",
+  "architecture": "Flutter Android/iOS/Windows + Drift/SQLite offline + FastAPI/PostgreSQL/Caddy",
+  "catalog_products": 48,
+  "cloud_backend": "self-hosted FastAPI/PostgreSQL",
+  "supabase": "legacy v0.5 files only; not used by current app",
+  "offline": {
+    "typed_drift_cache": true,
+    "durable_operation_queue": true,
+    "durable_document_queue": true,
+    "incremental_sync_events": true
+  },
+  "testfix1": {
+    "signed_document_url_contract": "fixed_static_runtime_pending",
+    "document_x_app_version": "fixed_static_runtime_pending",
+    "offline_payment_due_date_cache": "fixed_static_runtime_pending",
+    "sync_event_typed_cache_refresh": "fixed_static_runtime_pending",
+    "customer_address_idempotency": "fixed_static_runtime_pending",
+    "demo_customer_fallback": "removed",
+    "shipment_screen": "real customer -> RentalCreateScreen",
+    "os_notifications": "in_app_only_runtime_integration_pending"
+  },
+  "next_real_pc_tests": [
+    "flutter create platform scaffolding for android/ios/windows",
+    "flutter pub get",
+    "drift build_runner schemaVersion 6",
+    "flutter analyze",
+    "Windows and Android real build",
+    "iOS build/signing on macOS",
+    "two-device offline/online sync",
+    "signed document open"
+  ]
+}

@@ -1,0 +1,8 @@
+[Unit]
+Description=Şifa Kiralık Takip yerel ve OneDrive yedeği
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/sifa-kiralik-backup.env
+ExecStart=/opt/sifa-kiralik/server/scripts/backup_local.sh
+ExecStart=/opt/sifa-kiralik/server/scripts/backup_onedrive.sh

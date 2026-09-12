@@ -1,0 +1,10 @@
+[Unit]
+Description=Şifa İnşaat aylık felaket kurtarma paketi zamanlayıcısı
+
+[Timer]
+OnCalendar=monthly
+Persistent=true
+RandomizedDelaySec=20m
+
+[Install]
+WantedBy=timers.target

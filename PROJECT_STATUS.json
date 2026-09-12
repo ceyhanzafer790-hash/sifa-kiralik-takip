@@ -1,0 +1,472 @@
+{
+  "version": "0.24-due-dates-slowqueries-readiness",
+  "offline": {
+    "database": "Drift/SQLite",
+    "durable_queue": true,
+    "auto_sync": "network restore + every 1 minute",
+    "incremental_pull": "sync_events cursor"
+  },
+  "modules": {
+    "rental_tracking": "existing",
+    "billing": "existing",
+    "documents": "existing",
+    "sales": "API + multi-line creation form + offline queue",
+    "stock_count": "API + quick count screen"
+  },
+  "stock_rule": "physical count creates count_adjustment; history is never overwritten",
+  "next_without_pc": [],
+  "next_with_pc": [
+    "pip install server requirements including psycopg_pool",
+    "flutter pub get",
+    "drift build_runner for schemaVersion 6",
+    "flutter analyze",
+    "PostgreSQL 0001-0009 smoke test",
+    "real payment due-date API/offline sync test",
+    "real slow-query metric load test",
+    "real diagnostics ZIP inspection",
+    "Android/Windows/iOS build and release manifest registration",
+    "restore drill",
+    "real signed document URL/open test",
+    "real remote sync event -> typed Drift cache test",
+    "OS local notification integration decision and platform permission test",
+    "create first admin inside sifa-api container",
+    "real Shipment tab -> RentalCreate persistence test"
+  ],
+  "return_conditions": {
+    "usable": "available stock",
+    "repair": "repair bucket",
+    "scrap": "scrap bucket"
+  },
+  "offline_documents": {
+    "durable_local_copy": true,
+    "drift_queue": "PendingFileUploads",
+    "automatic_upload": "FileSyncWorker"
+  },
+  "roles": {
+    "admin": "read/write + future user management",
+    "staff": "operational read/write",
+    "viewer": "read only"
+  },
+  "stock_workflows": [
+    "repair -> available",
+    "available/repair -> scrap",
+    "available/repair -> lost"
+  ],
+  "offline_entity_ids": [
+    "customer",
+    "customer_address",
+    "rental",
+    "sale"
+  ],
+  "admin": [
+    "create user",
+    "change role",
+    "enable/disable user",
+    "reset password",
+    "view audit log"
+  ],
+  "offline_ui": [
+    "create customer",
+    "create rental",
+    "customer list from local cache"
+  ],
+  "typed_drift_cache": [
+    "customers",
+    "addresses",
+    "products",
+    "rentals",
+    "rental_items",
+    "rental_movements",
+    "rental_rates",
+    "rental_documents",
+    "billing_periods"
+  ],
+  "stock_sources": [
+    "opening stock",
+    "purchase"
+  ],
+  "full_offline_rental": [
+    "customer",
+    "address/site",
+    "rental",
+    "rental item client UUID",
+    "outbound movement",
+    "rate",
+    "return",
+    "return condition",
+    "document queue",
+    "offline list/detail"
+  ],
+  "backup": {
+    "health_endpoint": "/admin/backup-status",
+    "ui": "Admin > Yedek Sağlığı",
+    "verify_script": "server/scripts/test_latest_backup.sh",
+    "safe_restore_script": "server/scripts/restore_database.sh",
+    "routine_volume_fix_v21": true,
+    "status_merge_preserves_cloud_fields": true
+  },
+  "stable_client_ids": [
+    "customer",
+    "address",
+    "rental",
+    "rental_item",
+    "outbound_movement",
+    "return_movement",
+    "rental_rate",
+    "sale"
+  ],
+  "sync_ack": "typed local rows marked pendingSync=false after successful push",
+  "search": "server + offline Drift",
+  "legacy_matching": "Admin UI + server customer/rental validation",
+  "optimistic_conflicts": [
+    "rental invoice preference",
+    "billing period invoice/payment"
+  ],
+  "offline_billing": true,
+  "retry_backoff_minutes": [
+    1,
+    2,
+    5,
+    15,
+    30,
+    60
+  ],
+  "document_dedup": "SHA-256 per rental",
+  "conflict_resolution": {
+    "persisted": "Drift SyncConflicts",
+    "choices": [
+      "use_server",
+      "retry_local"
+    ],
+    "duplicate_operation_is_not_conflict": true
+  },
+  "reminders": [
+    "rental_soon_3_days",
+    "rental_due",
+    "invoice_due"
+  ],
+  "disaster_export": {
+    "database_dump": true,
+    "documents_archive": true,
+    "schema_copy": true,
+    "sha256_manifest": true,
+    "monthly_systemd_timer": true,
+    "migration_history": true,
+    "app_version": "0.24.0"
+  },
+  "legacy_parser": {
+    "sha256_dedup": true,
+    "filename_date_guess": true,
+    "filename_customer_candidate": true,
+    "xlsx_preview": true,
+    "auto_live_match": false,
+    "ocr": false
+  },
+  "server_migrations": {
+    "runner": "python -m app.migrate",
+    "checksum_protected": true,
+    "docker_prestart": true,
+    "latest": "0009",
+    "offline_validator": "server/scripts/validate_migrations.py",
+    "legacy_bootstrap": true
+  },
+  "reports": {
+    "rentals": [
+      "xlsx",
+      "csv"
+    ],
+    "stock": [
+      "xlsx",
+      "csv"
+    ],
+    "billing": [
+      "xlsx",
+      "csv"
+    ],
+    "filters": [
+      "customer",
+      "date_range"
+    ],
+    "customer_statement": {
+      "format": "xlsx",
+      "sheets": [
+        "summary",
+        "rentals",
+        "billing",
+        "sales"
+      ],
+      "period_filter": true,
+      "sales_sheet": true
+    }
+  },
+  "conflict_ui": "field-by-field Turkish comparison",
+  "excel_profiles": {
+    "generic_profile": "sifa_generic_v1",
+    "real_file_profile_pending": true,
+    "inspect_cli": "server/importers/inspect_excel_profiles.py"
+  },
+  "system_health": [
+    "postgresql",
+    "database_size",
+    "document_disk",
+    "import_disk",
+    "backup_age",
+    "migration_state",
+    "active_users",
+    "active_rentals"
+  ],
+  "document_compliance": [
+    "contract",
+    "outbound_delivery_per_movement",
+    "inbound_delivery_per_movement"
+  ],
+  "preflight": {
+    "offline": "server/scripts/preflight_check.py --offline",
+    "production": "server/scripts/preflight_check.py"
+  },
+  "dashboard": {
+    "offline_first": true,
+    "estimated_monthly_rental_revenue": true,
+    "issued_receivable_balance": true,
+    "invoice_due": true,
+    "missing_documents": true,
+    "unknown_stock": true,
+    "legacy_import_pending_server_only": true
+  },
+  "revenue_rules": {
+    "per_unit_monthly": "remaining_quantity * current_rate",
+    "fixed_monthly": "current_rate once if remaining > 0",
+    "unpriced_items_separate": true,
+    "estimate_is_not_invoice": true
+  },
+  "logging": {
+    "format": "jsonl",
+    "request_id": true,
+    "rotation": "10MB x 10",
+    "persistent_volume": "logs_data",
+    "sensitive_body_logging": false
+  },
+  "roles_ui": {
+    "admin": "full + finance + management",
+    "staff": "operations, no management/aggregate finance",
+    "viewer": "dashboard + customers + materials read-only",
+    "maintenance_staff": "read-only navigation"
+  },
+  "client_compatibility": {
+    "header": "X-App-Version",
+    "current": "0.24.0",
+    "min_version_setting": true,
+    "enforcement_default": false,
+    "upgrade_required_status": 426
+  },
+  "maintenance": {
+    "staff_writes_blocked": true,
+    "admin_writes_allowed": true,
+    "safe_upgrade_script": "server/scripts/safe_upgrade.sh",
+    "first_upgrade_gateway_fallback": true
+  },
+  "finance_drilldown": {
+    "receivables": "admin-only",
+    "rental_revenue_estimate": "admin-only customer/address breakdown",
+    "receivables_filters": [
+      "customer",
+      "date_range",
+      "customer_or_site_or_invoice_search"
+    ],
+    "rental_revenue_filters": [
+      "customer",
+      "customer_or_site_or_product_search"
+    ]
+  },
+  "document_compliance_exceptions": {
+    "admin_only": true,
+    "reason_required": true,
+    "audited": true,
+    "revocable": true
+  },
+  "quality_checks_v21": {
+    "python_compile": "passed",
+    "shell_bash_n": "passed",
+    "offline_preflight": "passed",
+    "migration_validation": "passed_through_0006",
+    "dart_relative_imports": "passed",
+    "dart_delimiter_balance": "passed",
+    "flutter_analyze": "pending_flutter_sdk_on_pc"
+  },
+  "database_pool": {
+    "enabled": true,
+    "dependency": "psycopg[binary,pool]==3.2.3",
+    "default_min": 2,
+    "default_max": 10,
+    "timeout_seconds": 10,
+    "system_health_stats": true,
+    "runtime_import_test": "pending_requirements_install_on_pc"
+  },
+  "audit_v22": {
+    "filters": [
+      "user",
+      "entity_type",
+      "action",
+      "date_range",
+      "free_text"
+    ],
+    "pagination": 100,
+    "server_total_count": true,
+    "facets": true,
+    "export": [
+      "xlsx",
+      "csv"
+    ]
+  },
+  "release_manifest": {
+    "db_table": "app_releases",
+    "platforms": [
+      "android",
+      "windows",
+      "ios"
+    ],
+    "sha256": true,
+    "size_bytes": true,
+    "builder": "server/scripts/build_release_manifest.py",
+    "verifier": "server/scripts/verify_release_manifest.py",
+    "actual_artifacts": "pending_real_flutter_builds",
+    "registration_helper": "server/scripts/register_release_manifest.py"
+  },
+  "error_handling_v22": {
+    "controlled_internal_500": true,
+    "request_id_header": "X-Request-ID",
+    "client_request_id_display": true,
+    "sensitive_payload_logging": false
+  },
+  "quality_checks_v22": {
+    "python_compile": "passed",
+    "shell_bash_n": "passed",
+    "offline_preflight": "passed_with_pool_dependency_warning_if_not_installed",
+    "migration_validation": "passed_through_0007",
+    "dart_relative_imports": "passed",
+    "dart_delimiter_balance": "passed",
+    "synthetic_release_manifest": "passed",
+    "flutter_analyze": "pending_flutter_sdk_on_pc",
+    "psycopg_pool_runtime_import": "pending_requirements_install_on_pc"
+  },
+  "receivable_aging": {
+    "basis": "invoice_date else renewal_date",
+    "buckets": [
+      "0-30",
+      "31-60",
+      "61+"
+    ],
+    "dashboard_31_plus": true,
+    "does_not_claim_payment_overdue": true
+  },
+  "diagnostics_bundle": {
+    "admin_only": true,
+    "format": "zip",
+    "contains": [
+      "diagnostics.json",
+      "recent_errors.json",
+      "README.txt"
+    ],
+    "excludes": [
+      "DATABASE_URL",
+      "JWT",
+      "Authorization",
+      "password",
+      "request_body",
+      "document_content",
+      "client_ip"
+    ]
+  },
+  "quality_checks_v23": {
+    "python_compile": "passed",
+    "shell_bash_n": "passed",
+    "offline_preflight": "passed_with_psycopg_pool_runtime_warning",
+    "migration_validation": "passed_through_0008",
+    "dart_relative_imports": "passed_0_missing",
+    "dart_delimiter_balance": "passed_0_errors",
+    "dart_file_count": 77,
+    "diagnostics_static_secret_check": "passed",
+    "synthetic_release_sha256": "passed",
+    "flutter_analyze": "pending_flutter_sdk_on_pc",
+    "postgres_runtime": "pending_real_postgresql_on_pc",
+    "diagnostics_live_zip_test": "pending_running_server_on_pc"
+  },
+  "payment_due_date": {
+    "server": true,
+    "drift": true,
+    "offline_sync": true,
+    "nullable": true,
+    "can_clear": true,
+    "must_not_precede_invoice_date": true,
+    "true_overdue_requires_due_date": true
+  },
+  "true_overdue": {
+    "buckets": [
+      "1-30",
+      "31-60",
+      "61+"
+    ],
+    "dashboard": true,
+    "missing_due_date_count": true
+  },
+  "slow_query_monitoring": {
+    "default_threshold_ms": 500,
+    "logs_sql_parameters": false,
+    "system_health_metrics": true
+  },
+  "audit_v24": {
+    "related_record_navigation": true,
+    "lazy_resolution": true
+  },
+  "production_readiness": {
+    "admin_api": true,
+    "admin_screen": true,
+    "manual_checklist": "URETIME_HAZIRLIK_KONTROL_LISTESI_V24.md",
+    "required_release_platforms": [
+      "android",
+      "windows",
+      "ios"
+    ]
+  },
+  "quality_checks_v24": {
+    "python_compile": "passed",
+    "shell_bash_n": "passed",
+    "offline_preflight": "passed_with_psycopg_pool_runtime_warning",
+    "migration_validation": "passed_through_0009",
+    "dart_file_count": 79,
+    "dart_relative_imports": "passed_0_missing",
+    "dart_delimiter_balance": "passed_0_errors",
+    "python_route_duplicates_same_module": "passed_0",
+    "system_status_duplicate_method": "fixed_and_passed",
+    "due_date_cross_layer": "passed_static",
+    "explicit_due_date_clear": "passed_static",
+    "synthetic_release_sha256": "passed",
+    "flutter_analyze": "pending_flutter_sdk_on_pc",
+    "postgres_runtime": "pending_real_postgresql_on_pc",
+    "real_device_sync": "pending_android_ios_windows_devices",
+    "restore_drill": "pending_server_setup"
+  },
+  "package_patch": "testfix1",
+  "quality_checks_v24_testfix1": {
+    "python_compile": "passed",
+    "shell_bash_n": "passed",
+    "offline_preflight": "passed_with_psycopg_pool_runtime_warning",
+    "migration_validation": "passed_through_0009",
+    "api_contract_scan": "passed_70_server_routes_72_client_calls",
+    "dart_file_count": 78,
+    "dart_relative_imports": "passed_0_missing_after_final_patch",
+    "dart_delimiter_balance": "passed_0_errors_after_final_patch",
+    "signed_document_url_contract": "fixed_static_runtime_pending",
+    "offline_payment_due_date_cache": "fixed_static_runtime_pending",
+    "sync_event_typed_cache_refresh": "fixed_static_runtime_pending",
+    "restore_dry_run": "implemented_static",
+    "os_notifications": "explicitly_in_app_only_runtime_integration_pending",
+    "demo_customer_fallback": "removed_from_customer_and_shipment_flows",
+    "shipment_screen": "real_customer_to_rental_create_flow",
+    "first_admin_in_docker": "fixed_static_runtime_pending",
+    "compose_env_tunables": "fixed_and_yaml_parsed",
+    "current_install_guide": "KURULUM_V24_TESTFIX1.md",
+    "demo_active_refs": "passed_0",
+    "docker_compose_yaml_parse": "passed"
+  }
+}

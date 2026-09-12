@@ -1,0 +1,84 @@
+{
+  "profile_id": "sifa_generic_v1",
+  "name": "Şifa İnşaat eski Excel genel profili",
+  "version": 1,
+  "header_scan_rows": 40,
+  "fields": {
+    "customer": [
+      "müşteri",
+      "musteri",
+      "firma",
+      "cari",
+      "ünvan",
+      "unvan"
+    ],
+    "address": [
+      "adres",
+      "şantiye",
+      "santiye",
+      "şantiye adı",
+      "santiye adi"
+    ],
+    "date": [
+      "tarih",
+      "sevk tarihi",
+      "çıkış tarihi",
+      "cikis tarihi",
+      "gidiş tarihi",
+      "gidis tarihi"
+    ],
+    "product": [
+      "malzeme",
+      "ürün",
+      "urun",
+      "malzeme adı",
+      "malzeme adi",
+      "cinsi",
+      "malzeme cinsi"
+    ],
+    "quantity": [
+      "miktar",
+      "adet",
+      "miktarı",
+      "miktari"
+    ],
+    "outbound": [
+      "giden",
+      "çıkan",
+      "cikan",
+      "sevk",
+      "sevk edilen",
+      "çıkış",
+      "cikis"
+    ],
+    "inbound": [
+      "gelen",
+      "iade",
+      "dönen",
+      "donen",
+      "geri gelen"
+    ],
+    "remaining": [
+      "kalan",
+      "bakiye",
+      "kirada kalan"
+    ],
+    "unit": [
+      "birim",
+      "ölçü",
+      "olcu"
+    ],
+    "price": [
+      "fiyat",
+      "birim fiyat",
+      "kira fiyatı",
+      "kira fiyati"
+    ],
+    "note": [
+      "not",
+      "açıklama",
+      "aciklama",
+      "izahat"
+    ]
+  }
+}

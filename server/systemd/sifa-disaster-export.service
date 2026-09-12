@@ -1,0 +1,10 @@
+[Unit]
+Description=Şifa İnşaat aylık felaket kurtarma paketi
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=LOCAL_BACKUP_DIR=/srv/sifa-backup
+Environment=SIFA_APP_DIR=/opt/sifa-kiralik
+ExecStart=/opt/sifa-kiralik/server/scripts/export_disaster_bundle.sh
