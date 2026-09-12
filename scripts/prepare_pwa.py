@@ -1,8 +1,11 @@
 """Prepare the Flutter client for a browser/PWA build without changing native behavior."""
+import json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-LIB = ROOT / "flutter_client" / "lib"
+CLIENT = ROOT / "flutter_client"
+LIB = CLIENT / "lib"
+WEB = CLIENT / "web"
 
 
 def replace_once(path: Path, old: str, new: str) -> None:
@@ -184,4 +187,50 @@ class DiagnosticsDownloadService {
 """,
 )
 
-print("PWA compatibility layer prepared.")
+# Brand the generated Flutter web target as an installable Şifa PWA.
+manifest_path = WEB / "manifest.json"
+manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+manifest.update(
+    {
+        "name": "Şifa İnşaat Kiralık Malzeme Takibi",
+        "short_name": "Şifa Kiralık",
+        "description": "Şifa İnşaat kiralık malzeme, sevkiyat ve tahsilat takip uygulaması.",
+        "display": "standalone",
+        "start_url": ".",
+        "scope": ".",
+        "background_color": "#F9F7FC",
+        "theme_color": "#5969A8",
+        "orientation": "any",
+    }
+)
+manifest_path.write_text(
+    json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
+    encoding="utf-8",
+)
+
+index_path = WEB / "index.html"
+index = index_path.read_text(encoding="utf-8")
+index = index.replace(
+    '<meta name="description" content="A new Flutter project.">',
+    '<meta name="description" content="Şifa İnşaat kiralık malzeme, sevkiyat ve tahsilat takip uygulaması.">',
+)
+index = index.replace(
+    '<meta name="mobile-web-app-capable" content="yes">',
+    '<meta name="mobile-web-app-capable" content="yes">\n'
+    '  <meta name="apple-mobile-web-app-capable" content="yes">',
+)
+index = index.replace(
+    '<meta name="apple-mobile-web-app-status-bar-style" content="black">',
+    '<meta name="apple-mobile-web-app-status-bar-style" content="default">',
+)
+index = index.replace(
+    '<meta name="apple-mobile-web-app-title" content="sifa_kiralik_takip">',
+    '<meta name="apple-mobile-web-app-title" content="Şifa Kiralık">',
+)
+index = index.replace(
+    '<title>sifa_kiralik_takip</title>',
+    '<title>Şifa Kiralık Takip</title>',
+)
+index_path.write_text(index, encoding="utf-8")
+
+print("PWA compatibility layer and branding prepared.")
