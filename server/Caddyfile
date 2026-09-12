@@ -1,11 +1,21 @@
 {$API_DOMAIN} {
     encode zstd gzip
-    reverse_proxy api:8000
 
+    # PWA browser requests need CORS. Keep this restricted to the Şifa PWA origin.
     header {
+        Access-Control-Allow-Origin "{$PWA_ORIGIN}"
+        Access-Control-Allow-Methods "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Authorization, Content-Type, X-App-Version"
+        Access-Control-Expose-Headers "Content-Disposition, X-Request-Id, X-Min-Client-Version"
+        Vary "Origin"
         Strict-Transport-Security "max-age=31536000; includeSubDomains"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "no-referrer"
     }
+
+    @preflight method OPTIONS
+    respond @preflight 204
+
+    reverse_proxy api:8000
 }
