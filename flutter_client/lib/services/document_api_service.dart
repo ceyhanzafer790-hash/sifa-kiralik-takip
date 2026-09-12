@@ -19,7 +19,7 @@ class DocumentApiService {
     required RentalDocumentType type,
     String? rentalMovementId,
   }) async {
-    final picked = await FilePicker.platform.pickFiles(
+    final picked = await FilePicker.pickFiles(
       type: FileType.custom,
       allowedExtensions: [
         'pdf',
