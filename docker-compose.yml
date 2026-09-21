@@ -42,6 +42,8 @@ services:
       - /srv/sifa-backup:/backup-status:ro
     expose:
       - "8000"
+    ports:
+      - "127.0.0.1:8000:8000"
 
   caddy:
     image: caddy:2-alpine
