@@ -1,0 +1,22 @@
+https://{$API_IP} {
+    tls /ipcerts/certificates/{$API_IP}.crt /ipcerts/certificates/{$API_IP}.key
+
+    encode zstd gzip
+
+    header {
+        Access-Control-Allow-Origin "{$PWA_ORIGIN}"
+        Access-Control-Allow-Methods "GET, POST, PATCH, PUT, DELETE, OPTIONS"
+        Access-Control-Allow-Headers "Authorization, Content-Type, X-App-Version"
+        Access-Control-Expose-Headers "Content-Disposition, X-Request-Id, X-Min-Client-Version"
+        Vary "Origin"
+        Strict-Transport-Security "max-age=31536000"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer"
+    }
+
+    @preflight method OPTIONS
+    respond @preflight 204
+
+    reverse_proxy api:8000
+}
