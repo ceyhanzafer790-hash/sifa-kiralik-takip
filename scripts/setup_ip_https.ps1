@@ -90,16 +90,13 @@ Write-Step "HTTPS health bekleniyor"
 $healthy = $false
 for ($i = 0; $i -lt 30; $i++) {
     Start-Sleep -Seconds 2
-    try {
-        $result = Invoke-RestMethod "https://$publicIp/health" -TimeoutSec 5
-        if ($result.status -eq "ok") {
-            $healthy = $true
-            $result | ConvertTo-Json -Compress
-            break
-        }
-    } catch {
-        Write-Host "Bekleniyor... $($_.Exception.Message)"
+    $healthText = curl.exe --fail --silent --show-error --resolve "$($publicIp):443:127.0.0.1" "https://$publicIp/health" 2>$null
+    if ($LASTEXITCODE -eq 0 -and $healthText -match '"status"\s*:\s*"ok"') {
+        $healthy = $true
+        Write-Host $healthText
+        break
     }
+    Write-Host "Bekleniyor..."
 }
 
 if (-not $healthy) {
