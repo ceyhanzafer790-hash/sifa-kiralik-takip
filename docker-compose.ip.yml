@@ -1,0 +1,12 @@
+services:
+  caddy:
+    environment:
+      API_IP: ${API_IP}
+      PWA_ORIGIN: ${PWA_ORIGIN:-https://app.sifains.com}
+    volumes:
+      - ./server/Caddyfile.ip:/etc/caddy/Caddyfile:ro
+      - sifa_ipcerts:/ipcerts:ro
+
+volumes:
+  sifa_ipcerts:
+    external: true
