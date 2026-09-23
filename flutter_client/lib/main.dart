@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'screens/auth_root.dart';
 import 'services/api_config.dart';
 import 'services/local_catalog_seed_service.dart';
+import 'widgets/sifa_brand.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,12 +17,12 @@ class SifaKiralikTakipApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const navy = Color(0xFF111111);
-    const warmGold = Color(0xFFD4AF37);
-    const canvas = Color(0xFFFAFAF8);
+    const navy = SifaBrand.charcoal;
+    const warmGold = SifaBrand.gold;
+    const canvas = SifaBrand.ivory;
 
     final scheme = ColorScheme.fromSeed(
-      seedColor: navy,
+      seedColor: warmGold,
       brightness: Brightness.light,
     ).copyWith(
       primary: navy,
@@ -41,12 +42,16 @@ class SifaKiralikTakipApp extends StatelessWidget {
           centerTitle: false,
           elevation: 0,
           scrolledUnderElevation: 0,
-          backgroundColor: canvas,
+          backgroundColor: SifaBrand.charcoal,
+          foregroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
+          iconTheme: IconThemeData(color: Colors.white),
+          actionsIconTheme: IconThemeData(color: SifaBrand.gold),
           titleTextStyle: TextStyle(
-            color: navy,
+            color: Colors.white,
             fontSize: 19,
             fontWeight: FontWeight.w900,
+            letterSpacing: -0.2,
           ),
         ),
         textTheme: const TextTheme(
@@ -70,20 +75,20 @@ class SifaKiralikTakipApp extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             borderSide: BorderSide.none,
           ),
           enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             borderSide: BorderSide(
               color: Colors.black.withOpacity(0.07),
             ),
           ),
           focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             borderSide: const BorderSide(
-              color: navy,
-              width: 1.5,
+              color: warmGold,
+              width: 1.6,
             ),
           ),
         ),
@@ -94,15 +99,15 @@ class SifaKiralikTakipApp extends StatelessWidget {
           surfaceTintColor: Colors.transparent,
           color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
             side: BorderSide(
               color: Colors.black.withOpacity(0.045),
             ),
           ),
         ),
         navigationBarTheme: NavigationBarThemeData(
-          height: 72,
-          elevation: 2,
+          height: 74,
+          elevation: 0,
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
           indicatorColor: warmGold.withOpacity(0.16),
@@ -127,7 +132,9 @@ class SifaKiralikTakipApp extends StatelessWidget {
         ),
         filledButtonTheme: FilledButtonThemeData(
           style: FilledButton.styleFrom(
-            minimumSize: const Size(48, 48),
+            backgroundColor: SifaBrand.charcoal,
+            foregroundColor: Colors.white,
+            minimumSize: const Size(48, 50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(13),
             ),
@@ -136,7 +143,9 @@ class SifaKiralikTakipApp extends StatelessWidget {
         ),
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
-            minimumSize: const Size(48, 48),
+            foregroundColor: SifaBrand.charcoal,
+            side: const BorderSide(color: SifaBrand.gold),
+            minimumSize: const Size(48, 50),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(13),
             ),
@@ -153,6 +162,19 @@ class SifaKiralikTakipApp extends StatelessWidget {
           color: Colors.black.withOpacity(0.07),
           thickness: 1,
         ),
+        bottomSheetTheme: const BottomSheetThemeData(
+          backgroundColor: SifaBrand.ivory,
+          surfaceTintColor: Colors.transparent,
+          showDragHandle: true,
+          dragHandleColor: SifaBrand.gold,
+        ),
+        dialogTheme: DialogThemeData(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(22),
+          ),
+        ),
         snackBarTheme: SnackBarThemeData(
           behavior: SnackBarBehavior.floating,
           backgroundColor: navy,
@@ -161,7 +183,7 @@ class SifaKiralikTakipApp extends StatelessWidget {
             fontWeight: FontWeight.w700,
           ),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(18),
           ),
         ),
       ),
