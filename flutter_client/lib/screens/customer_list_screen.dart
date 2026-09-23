@@ -7,6 +7,7 @@ import '../services/local_domain_cache.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/sifa_brand.dart';
 import 'customer_create_screen.dart';
 import 'customer_detail_screen.dart';
 
@@ -340,7 +341,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
                     return Card(
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(14),
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
@@ -356,17 +357,23 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              CircleAvatar(
-                                radius: 23,
-                                child: Text(
-                                  customer.name.isEmpty
-                                      ? '?'
-                                      : customer.name
-                                          .substring(0, 1)
-                                          .toUpperCase(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
+                              Container(
+                                width: 46,
+                                height: 46,
+                                decoration: BoxDecoration(
+                                  color: SifaBrand.ivory,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: SifaBrand.softGrey,
                                   ),
+                                ),
+                                alignment: Alignment.center,
+                                child: SifaBuildingMark(
+                                  size: 31,
+                                  gold: activity.latestOutboundDate != null &&
+                                      DateTime.now()
+                                              .difference(activity.latestOutboundDate!)
+                                              .inDays <= 7,
                                 ),
                               ),
                               const SizedBox(width: 12),
@@ -382,7 +389,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                             customer.name,
                                             style: const TextStyle(
                                               fontWeight: FontWeight.w900,
-                                              fontSize: 16,
+                                              fontSize: 15.5,
                                             ),
                                           ),
                                         ),
@@ -557,7 +564,7 @@ class _CustomerSearchHeader extends SliverPersistentHeaderDelegate {
                     initialValue: query,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search),
-                      hintText: 'Müşteri ara',
+                      hintText: 'Müşteri ara...',
                       contentPadding:
                           EdgeInsets.symmetric(vertical: 10),
                     ),
