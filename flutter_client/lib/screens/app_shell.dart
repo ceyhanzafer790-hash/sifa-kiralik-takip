@@ -317,7 +317,11 @@ class _AppShellState extends State<AppShell> {
                   subtitle: 'Açık hesapları görüntüle ve tahsilatı işle.',
                   onTap: () {
                     Navigator.pop(context);
-                    _push(const ReceivablesScreen());
+                    _push(
+                      const ReceivablesScreen(
+                        paymentMode: true,
+                      ),
+                    );
                   },
                 ),
             ],
