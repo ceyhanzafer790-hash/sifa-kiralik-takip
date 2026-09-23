@@ -817,15 +817,16 @@ class _BillingPeriodScreenState
         _ => 'Faturasız',
       };
 
-  static String _plainNumber(double value) =>
-      value == value.roundToDouble()
-          ? value.toInt().toString()
-          : value
-              .toStringAsFixed(2)
-              .replaceFirst(RegExp(r'0+
-), '')
-              .replaceFirst(RegExp(r'\.
-), '');
+  static String _plainNumber(double value) {
+    final fixed = value.toStringAsFixed(2);
+    if (fixed.endsWith('.00')) {
+      return fixed.substring(0, fixed.length - 3);
+    }
+    if (fixed.endsWith('0')) {
+      return fixed.substring(0, fixed.length - 1);
+    }
+    return fixed;
+  }
 
   static String _money(double value) {
     final fixed = value.toStringAsFixed(2);
