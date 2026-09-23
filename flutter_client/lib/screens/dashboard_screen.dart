@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../services/dashboard_api_repository.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
+import '../widgets/sifa_brand.dart';
 import 'document_compliance_screen.dart';
 import 'global_search_screen.dart';
 import 'overdue_receivables_screen.dart';
@@ -89,33 +90,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Günaydın',
+                      'Merhaba',
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                             fontWeight: FontWeight.w900,
                           ),
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'Bugünkü kiralama durumuna hızlıca bak.',
+                      'Bugün de sağlam adımlar atalım.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color: SifaBrand.textGrey,
                           ),
                     ),
                   ],
                 ),
               ),
-              if (d != null)
-                Chip(
-                  avatar: Icon(
-                    d['source'] == 'server'
-                        ? Icons.cloud_done_outlined
-                        : Icons.phone_android_outlined,
-                    size: 18,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _displayDate(DateTime.now().toIso8601String()),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
-                  label: Text(
-                    d['source'] == 'server' ? 'Merkez' : 'Offline',
-                  ),
-                ),
+                  const SizedBox(height: 3),
+                  if (d != null)
+                    Text(
+                      d['source'] == 'server' ? 'Merkez veri' : 'Offline veri',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: SifaBrand.textGrey,
+                          ),
+                    ),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -152,7 +161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (d != null) ...[
             const SizedBox(height: 18),
             Text(
-              'Bugün',
+              'Genel Durum',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.w900,
                   ),
@@ -164,40 +173,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 _MetricCard(
                   width: cardWidth,
+                  title: 'Aktif Müşteri',
+                  value: _count(d['customer_count']),
+                  subtitle: 'Kayıtlı müşteri',
+                  icon: Icons.people_alt_outlined,
+                  onTap: () => _open(const RentalsOverviewScreen()),
+                ),
+                _MetricCard(
+                  width: cardWidth,
                   title: 'Aktif Kiralama',
                   value: _count(d['active_rental_count']),
-                  subtitle:
-                      '${_count(d['active_rental_item_count'])} kiradaki kalem',
-                  icon: Icons.event_repeat_outlined,
+                  subtitle: 'Devam eden kiralama',
+                  icon: Icons.inventory_2_outlined,
                   onTap: () => _open(const RentalsOverviewScreen()),
+                ),
+                _MetricCard(
+                  width: cardWidth,
+                  title: 'Müşteride',
+                  value: _count(d['active_rental_item_count']),
+                  subtitle: 'Aktif malzeme kalemi',
+                  icon: Icons.apartment_outlined,
+                  onTap: () => _open(const ReminderCenterScreen()),
                 ),
                 _MetricCard(
                   width: cardWidth,
                   title: 'Bugünkü Hareket',
                   value: _count(d['today_movement_count']),
                   subtitle: 'Giden + gelen',
-                  icon: Icons.swap_vert_circle_outlined,
+                  icon: Icons.arrow_forward_rounded,
                   onTap: () => _open(const RentalsOverviewScreen()),
-                ),
-                _MetricCard(
-                  width: cardWidth,
-                  title: 'Bugün Kira',
-                  value: _count(d['renewal_due_today_count']),
-                  subtitle:
-                      '${_count(d['renewal_next_3_days_count'])} kayıt 3 gün içinde',
-                  icon: Icons.calendar_today_outlined,
-                  onTap: () => _open(const ReminderCenterScreen()),
-                ),
-                _MetricCard(
-                  width: cardWidth,
-                  title: 'Eksik Belge',
-                  value: _count(d['missing_document_count']),
-                  subtitle:
-                      '${_count(d['missing_document_rental_count'])} kiralama',
-                  icon: Icons.description_outlined,
-                  onTap: d['source'] == 'server'
-                      ? () => _open(const DocumentComplianceScreen())
-                      : null,
                 ),
               ],
             ),
@@ -369,8 +373,16 @@ class _MetricCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon),
-                const SizedBox(height: 12),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: SifaBrand.gold.withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: SifaBrand.deepGold, size: 21),
+                ),
+                const SizedBox(height: 10),
                 Text(
                   value,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
