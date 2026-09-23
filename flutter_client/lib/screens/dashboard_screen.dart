@@ -70,6 +70,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final renewals = ((d?['renewals'] as List?) ?? const [])
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
+    final recentMovements =
+        ((d?['recent_movements'] as List?) ?? const [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
 
     final screenWidth = MediaQuery.of(context).size.width;
     final cardWidth = math.min(
@@ -205,6 +209,71 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 22),
+            const SifaSectionTitle(
+              title: 'Son Hareketler',
+            ),
+            const SizedBox(height: 8),
+            if (recentMovements.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Henüz malzeme hareketi görünmüyor.'),
+                ),
+              )
+            else
+              ...recentMovements.map((movement) {
+                final outbound =
+                    movement['movement_type']?.toString() == 'outbound';
+                final date = DateTime.tryParse(
+                  movement['movement_date']?.toString() ?? '',
+                );
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: Card(
+                    child: ListTile(
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: outbound
+                              ? SifaBrand.gold.withOpacity(0.12)
+                              : SifaBrand.successBg,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        alignment: Alignment.center,
+                        child: SifaBuildingMark(
+                          size: 28,
+                          gold: outbound,
+                        ),
+                      ),
+                      title: Text(
+                        movement['customer_name']?.toString() ?? 'Müşteri',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (date != null) _displayDate(date.toIso8601String()),
+                          '${_number(_double(movement['quantity']))} '
+                              '${_unit(movement['unit'])} '
+                              '${movement['product_name'] ?? 'Malzeme'} '
+                              '${outbound ? 'çıktı' : 'geri geldi'}',
+                        ].join('\n'),
+                      ),
+                      trailing: Icon(
+                        outbound ? Icons.north_east : Icons.south_west,
+                        color: outbound
+                            ? SifaBrand.deepGold
+                            : SifaBrand.success,
+                      ),
+                      isThreeLine: true,
+                    ),
+                  ),
+                );
+              }),
             if (canSeeFinancials && d['financials_visible'] != false) ...[
               const SizedBox(height: 22),
               Text(
@@ -336,6 +405,310 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   double _double(dynamic value) => (value as num?)?.toDouble() ?? 0;
+
+  String _number(double value) => value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'0+
+    final d = DateTime.tryParse(raw.toString());
+    return d == null ? raw.toString() : trDate(d);
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final double width;
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _MetricCard({
+    required this.width,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: SifaBrand.gold.withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: SifaBrand.deepGold, size: 21),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FinancialCard extends StatelessWidget {
+  final String title;
+  final double amount;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _FinancialCard({
+    required this.title,
+    required this.amount,
+    required this.subtitle,
+    required this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(child: Icon(icon)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_money(amount)} ₺',
+                      style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _money(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final reversed = parts[0].split('').reversed.toList();
+    final groups = <String>[];
+
+    for (var i = 0; i < reversed.length; i += 3) {
+      groups.add(
+        reversed.skip(i).take(3).toList().reversed.join(),
+      );
+    }
+
+    final whole = groups.reversed.join('.');
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  }
+}
+), '')
+          .replaceFirst(RegExp(r'\.
+    final d = DateTime.tryParse(raw.toString());
+    return d == null ? raw.toString() : trDate(d);
+  }
+}
+
+class _MetricCard extends StatelessWidget {
+  final double width;
+  final String title;
+  final String value;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _MetricCard({
+    required this.width,
+    required this.title,
+    required this.value,
+    required this.subtitle,
+    required this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: width,
+      child: Card(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(15),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: SifaBrand.gold.withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: SifaBrand.deepGold, size: 21),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  value,
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FinancialCard extends StatelessWidget {
+  final String title;
+  final double amount;
+  final String subtitle;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  const _FinancialCard({
+    required this.title,
+    required this.amount,
+    required this.subtitle,
+    required this.icon,
+    this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(child: Icon(icon)),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_money(amount)} ₺',
+                      style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  static String _money(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final reversed = parts[0].split('').reversed.toList();
+    final groups = <String>[];
+
+    for (var i = 0; i < reversed.length; i += 3) {
+      groups.add(
+        reversed.skip(i).take(3).toList().reversed.join(),
+      );
+    }
+
+    final whole = groups.reversed.join('.');
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  }
+}
+), '');
+
+  String _unit(dynamic unit) => switch (unit?.toString()) {
+        'sheet' => 'Levha',
+        'meter' => 'Metre',
+        'squareMeter' || 'square_meter' => 'm²',
+        'cubicMeter' || 'cubic_meter' => 'm³',
+        'kilogram' => 'kg',
+        'liter' => 'Litre',
+        'set' => 'Takım',
+        _ => 'Adet',
+      };
 
   String _displayDate(dynamic raw) {
     final d = DateTime.tryParse(raw.toString());
