@@ -74,7 +74,22 @@ class _ShipmentScreenState extends State<ShipmentScreen> {
     final id = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const CustomerCreateScreen()),
     );
-    if (id != null) await _load();
+    if (id == null) return;
+
+    await _load();
+    if (!mounted) return;
+
+    Customer? created;
+    for (final customer in customers) {
+      if (customer.id == id) {
+        created = customer;
+        break;
+      }
+    }
+
+    if (created != null) {
+      await _startRental(created);
+    }
   }
 
   Future<void> _startRental(Customer customer) async {
