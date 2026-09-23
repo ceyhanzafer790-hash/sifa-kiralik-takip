@@ -26,7 +26,6 @@ class SifaKiralikTakipApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(
           seedColor: seed,
           brightness: Brightness.light,
-          surface: const Color(0xFFF7F7F5),
         ),
         scaffoldBackgroundColor: const Color(0xFFF7F7F5),
         appBarTheme: const AppBarTheme(
@@ -45,7 +44,7 @@ class SifaKiralikTakipApp extends StatelessWidget {
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide(
-              color: Colors.black.withValues(alpha: 0.08),
+              color: Colors.black.withOpacity(0.08),
             ),
           ),
           focusedBorder: OutlineInputBorder(
@@ -63,7 +62,7 @@ class SifaKiralikTakipApp extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18),
             side: BorderSide(
-              color: Colors.black.withValues(alpha: 0.06),
+              color: Colors.black.withOpacity(0.06),
             ),
           ),
         ),
