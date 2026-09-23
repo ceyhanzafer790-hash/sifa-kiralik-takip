@@ -76,20 +76,20 @@ class _ShipmentScreenState extends State<ShipmentScreen> {
     );
     if (id == null) return;
 
-    await _load();
+    final row = await repo.getByIdOfflineFirst(id);
     if (!mounted) return;
 
-    Customer? created;
-    for (final customer in customers) {
-      if (customer.id == id) {
-        created = customer;
-        break;
-      }
+    if (row != null) {
+      await _startRental(
+        Customer(
+          id: row['id'].toString(),
+          name: row['name'].toString(),
+        ),
+      );
+      return;
     }
 
-    if (created != null) {
-      await _startRental(created);
-    }
+    await _load();
   }
 
   Future<void> _startRental(Customer customer) async {
