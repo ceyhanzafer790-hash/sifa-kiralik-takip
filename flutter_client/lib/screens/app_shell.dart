@@ -197,9 +197,18 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       appBar: AppBar(
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
         title: const SifaWordmark(
           compact: true,
           showSubtitle: true,
+          light: true,
         ),
         actions: [
           IconButton(
