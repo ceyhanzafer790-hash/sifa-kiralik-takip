@@ -46,6 +46,7 @@ class LocalDashboardService {
     var missingDueDateCount = 0;
     var missingDocuments = 0;
     var missingRentalDocuments = 0;
+    var activeRentalItemCount = 0;
 
     for (final rental in rentals) {
       final renewal = nextMonthlyRentalDate(
@@ -104,6 +105,7 @@ class LocalDashboardService {
             .toDouble();
 
         if (remaining <= 0) continue;
+        activeRentalItemCount++;
 
         final itemRates = rates
             .where(
@@ -203,9 +205,16 @@ class LocalDashboardService {
         .where((p) => p.active && p.stockConfidence == 'unknown')
         .length;
 
+    final todayMovementCount = movements
+        .where((m) => _sameDay(m.movementDate, today))
+        .length;
+
     return {
       'today': today.toIso8601String(),
       'window_days': days,
+      'active_rental_count': rentals.length,
+      'active_rental_item_count': activeRentalItemCount,
+      'today_movement_count': todayMovementCount,
       'renewals': renewals,
       'renewal_due_today_count':
           renewals.where((r) => r['days_until'] == 0).length,
