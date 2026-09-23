@@ -151,19 +151,53 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ].join(' • ');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Raporlar')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
         children: [
+          Text(
+            'Raporlar',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Kiralama, stok ve finans raporlarını tek yerden hazırla.',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: SifaBrand.textGrey,
+                ),
+          ),
+          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Rapor Filtresi',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: SifaBrand.gold.withOpacity(0.13),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.tune_rounded,
+                          color: SifaBrand.deepGold,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Rapor Filtresi',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -228,15 +262,15 @@ class _ReportsScreenState extends State<ReportsScreen> {
           ),
           if (isAdmin)
             _ReportCard(
-            title: 'Fatura ve Tahsilat',
-            subtitle:
-                'Kira dönemi, fatura durumu, tahsil edilen ve kalan bakiye.',
-            icon: Icons.receipt_long_outlined,
-            onXlsx: () => _download('billing', 'xlsx'),
-            onCsv: () => _download('billing', 'csv'),
-            xlsxBusy: busy == 'billing:xlsx',
-            csvBusy: busy == 'billing:csv',
-          ),
+              title: 'Fatura ve Tahsilat',
+              subtitle:
+                  'Kira dönemi, fatura durumu, tahsil edilen ve kalan bakiye.',
+              icon: Icons.receipt_long_outlined,
+              onXlsx: () => _download('billing', 'xlsx'),
+              onCsv: () => _download('billing', 'csv'),
+              xlsxBusy: busy == 'billing:xlsx',
+              csvBusy: busy == 'billing:csv',
+            ),
         ],
       ),
     );
