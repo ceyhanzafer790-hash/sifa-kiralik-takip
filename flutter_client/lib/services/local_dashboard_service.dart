@@ -11,9 +11,9 @@ class LocalDashboardService {
     required DateTime today,
     int days = 30,
   }) async {
-    final rentals = await (db.select(db.localRentals)
-          ..where((r) => r.status.equals('active')))
-        .get();
+    final allRentals = await db.select(db.localRentals).get();
+    final rentals = allRentals.where((r) => r.status == 'active').toList();
+    final rentalById = {for (final r in allRentals) r.id: r};
 
     final customers = {
       for (final c in await db.select(db.localCustomers).get()) c.id: c,
@@ -29,6 +29,36 @@ class LocalDashboardService {
     final documents = await db.select(db.localRentalDocuments).get();
     final pendingDocs = await db.select(db.pendingFileUploads).get();
     final products = await db.select(db.localProducts).get();
+    final productById = {for (final p in products) p.id: p};
+
+    final recentMovements = movements.toList()
+      ..sort((a, b) {
+        final byDate = b.movementDate.compareTo(a.movementDate);
+        if (byDate != 0) return byDate;
+        return b.updatedAt.compareTo(a.updatedAt);
+      });
+
+    final recentMovementRows = <Map<String, dynamic>>[];
+    for (final movement in recentMovements.take(6)) {
+      final rental = rentalById[movement.rentalId];
+      if (rental == null) continue;
+      final customer = customers[rental.customerId];
+      final address =
+          rental.addressId == null ? null : addresses[rental.addressId!];
+      final product = productById[movement.productId];
+
+      recentMovementRows.add({
+        'id': movement.id,
+        'rental_record_id': rental.id,
+        'movement_type': movement.movementType,
+        'quantity': movement.quantity,
+        'movement_date': movement.movementDate.toIso8601String(),
+        'customer_name': customer?.name ?? 'Müşteri',
+        'address_label': address?.label,
+        'product_name': product?.name ?? 'Malzeme',
+        'unit': product?.unit ?? 'piece',
+      });
+    }
 
     final end = DateTime(
       today.year,
@@ -215,6 +245,7 @@ class LocalDashboardService {
       'active_rental_count': rentals.length,
       'active_rental_item_count': activeRentalItemCount,
       'today_movement_count': todayMovementCount,
+      'recent_movements': recentMovementRows,
       'renewals': renewals,
       'renewal_due_today_count':
           renewals.where((r) => r['days_until'] == 0).length,
