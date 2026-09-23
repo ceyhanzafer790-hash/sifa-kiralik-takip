@@ -734,49 +734,71 @@ class _RentalTrackingDetailScreenState
 
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.builder(
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
-        itemCount: movements.length,
-        itemBuilder: (context, index) {
-          final movement = movements[index];
-          final item = items.firstWhere(
-            (i) =>
-                i['id'].toString() ==
-                movement['rental_item_id'].toString(),
-            orElse: () => {
-              'product_name': 'Malzeme',
-              'unit': 'piece',
-            },
-          );
-          final inbound = movement['movement_type'] == 'inbound_return';
-          final date =
-              DateTime.parse(movement['movement_date'].toString());
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Malzeme Hareketleri',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              StatusPill(
+                label: '${movements.length} hareket',
+                tone: AppStatusTone.neutral,
+                compact: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          ...List.generate(movements.length, (index) {
+            final movement = movements[index];
+            final item = items.firstWhere(
+              (i) =>
+                  i['id'].toString() ==
+                  movement['rental_item_id'].toString(),
+              orElse: () => {
+                'product_name': 'Malzeme',
+                'unit': 'piece',
+              },
+            );
+            final inbound = movement['movement_type'] == 'inbound_return';
+            final date =
+                DateTime.parse(movement['movement_date'].toString());
 
-          return _TimelineTile(
-            isLast: index == movements.length - 1,
-            icon: inbound ? Icons.south_west : Icons.north_east,
-            tone: inbound ? AppStatusTone.success : AppStatusTone.info,
-            status: inbound ? 'Gelen' : 'Giden',
-            title:
-                '${_n(_double(movement['quantity']))} ${_unit(item['unit'])} ${item['product_name']}',
-            subtitle: [
-              trDate(date),
-              if (movement['return_condition'] != null)
-                _condition(movement['return_condition'].toString()),
-              if (movement['pending_sync'] == true) 'Senkron bekliyor',
-            ].join(' • '),
-            trailing: canWrite
-                ? IconButton(
-                    tooltip: 'Bu harekete belge ekle',
-                    onPressed: () => _queueDocument(
-                      inbound ? 'inbound_delivery' : 'outbound_delivery',
-                      movementId: movement['id'].toString(),
-                    ),
-                    icon: const Icon(Icons.attach_file),
-                  )
-                : null,
-          );
-        },
+            return _TimelineTile(
+              isLast: index == movements.length - 1,
+              icon: inbound ? Icons.south_west : Icons.north_east,
+              tone: inbound ? AppStatusTone.success : AppStatusTone.info,
+              status: inbound ? 'Gelen' : 'Giden',
+              title:
+                  '${_n(_double(movement['quantity']))} ${_unit(item['unit'])} ${item['product_name']}',
+              subtitle: [
+                trDate(date),
+                if (movement['return_condition'] != null)
+                  _condition(movement['return_condition'].toString()),
+                if (movement['pending_sync'] == true) 'Senkron bekliyor',
+              ].join(' • '),
+              trailing: canWrite
+                  ? IconButton(
+                      tooltip: 'Bu harekete belge ekle',
+                      onPressed: () => _queueDocument(
+                        inbound ? 'inbound_delivery' : 'outbound_delivery',
+                        movementId: movement['id'].toString(),
+                      ),
+                      icon: const Icon(
+                        Icons.attach_file,
+                        color: SifaBrand.deepGold,
+                      ),
+                    )
+                  : null,
+            );
+          }),
+        ],
       ),
     );
   }
@@ -792,49 +814,78 @@ class _RentalTrackingDetailScreenState
 
     return RefreshIndicator(
       onRefresh: _load,
-      child: ListView.separated(
+      child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
-        itemCount: rates.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
-        itemBuilder: (context, index) {
-          final rate = rates[index];
-          final effective =
-              DateTime.parse(rate['effective_from'].toString());
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Fiyat Geçmişi',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              StatusPill(
+                label: '${rates.length} kayıt',
+                tone: AppStatusTone.neutral,
+                compact: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Eski fiyatlar silinmez; her değişiklik geçerlilik tarihiyle saklanır.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: SifaBrand.textGrey,
+                ),
+          ),
+          const SizedBox(height: 12),
+          ...rates.map((rate) {
+            final effective =
+                DateTime.parse(rate['effective_from'].toString());
 
-          return Card(
-            child: ListTile(
-              leading: Container(
-                width: 42,
-                height: 42,
-                decoration: BoxDecoration(
-                  color: SifaBrand.gold.withOpacity(0.13),
-                  borderRadius: BorderRadius.circular(12),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Card(
+                child: ListTile(
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: SifaBrand.gold.withOpacity(0.13),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.price_change_outlined,
+                      color: SifaBrand.deepGold,
+                      size: 21,
+                    ),
+                  ),
+                  title: Text(
+                    '${rate['product_name']} • ${_money(_double(rate['amount']))} ₺',
+                    style: const TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                  subtitle: Text(
+                    '${trDate(effective)} tarihinden itibaren • '
+                    '${rate['rate_type'] == 'fixed_monthly' ? 'Sabit aylık' : 'Birim başına aylık'}',
+                  ),
+                  trailing: rate['pending_sync'] == true
+                      ? const StatusPill(
+                          label: 'Bekliyor',
+                          tone: AppStatusTone.info,
+                          compact: true,
+                        )
+                      : null,
                 ),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.price_change_outlined,
-                  color: SifaBrand.deepGold,
-                  size: 21,
-                ),
               ),
-              title: Text(
-                '${rate['product_name']} • ${_money(_double(rate['amount']))} ₺',
-                style: const TextStyle(fontWeight: FontWeight.w900),
-              ),
-              subtitle: Text(
-                '${trDate(effective)} tarihinden itibaren • '
-                '${rate['rate_type'] == 'fixed_monthly' ? 'Sabit aylık' : 'Birim başına aylık'}',
-              ),
-              trailing: rate['pending_sync'] == true
-                  ? const StatusPill(
-                      label: 'Bekliyor',
-                      tone: AppStatusTone.info,
-                      compact: true,
-                    )
-                  : null,
-            ),
-          );
-        },
+            );
+          }),
+        ],
       ),
     );
   }
