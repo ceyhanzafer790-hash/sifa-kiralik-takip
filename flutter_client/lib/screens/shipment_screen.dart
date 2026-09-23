@@ -73,7 +73,11 @@ class _ShipmentScreenState extends State<ShipmentScreen> {
 
   Future<void> _createCustomer() async {
     final id = await Navigator.of(context).push<String>(
-      MaterialPageRoute(builder: (_) => const CustomerCreateScreen()),
+      MaterialPageRoute(
+        builder: (_) => const CustomerCreateScreen(
+          continueAfterSave: true,
+        ),
+      ),
     );
     if (id == null) return;
 
