@@ -1,7 +1,7 @@
 name: sifa_kiralik_takip
 description: Şifa İnşaat kiralık malzeme takip uygulaması - self hosted/offline.
 publish_to: "none"
-version: 0.24.0+24
+version: 0.25.0+25
 
 environment:
   sdk: ">=3.4.0 <4.0.0"
