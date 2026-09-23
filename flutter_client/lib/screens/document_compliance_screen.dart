@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/document_compliance_repository.dart';
 import '../services/role_service.dart';
+import '../widgets/sifa_brand.dart';
 import 'compliance_exceptions_screen.dart';
 import 'rental_tracking_detail_screen.dart';
 
@@ -85,7 +86,11 @@ class _DocumentComplianceScreenState
               maxLines: 3,
               decoration: const InputDecoration(
                 labelText: 'Gerekçe',
-                border: OutlineInputBorder(),
+                prefixIcon: Icon(
+                  Icons.rule_outlined,
+                  color: SifaBrand.deepGold,
+                ),
+                alignLabelWithHint: true,
               ),
             ),
           ],
@@ -136,7 +141,18 @@ class _DocumentComplianceScreenState
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Eksik Belgeler'),
+        title: const Text(
+          'Eksik Belgeler',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
         actions: [
           if (isAdmin)
             IconButton(
@@ -160,13 +176,36 @@ class _DocumentComplianceScreenState
           padding: const EdgeInsets.all(16),
           children: [
             Card(
-              child: Padding(
+              child: Container(
                 padding: const EdgeInsets.all(14),
-                child: Text(
-                  loading
-                      ? 'Belgeler kontrol ediliyor…'
-                      : 'Toplam $missingTotal eksik belge/hareket bağlantısı var.',
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                decoration: BoxDecoration(
+                  color: missingTotal > 0
+                      ? const Color(0xFFFFF4E5)
+                      : SifaBrand.successBg,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      missingTotal > 0
+                          ? Icons.warning_amber_outlined
+                          : Icons.verified_outlined,
+                      color: missingTotal > 0
+                          ? const Color(0xFF9A5D00)
+                          : SifaBrand.success,
+                    ),
+                    const SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        loading
+                            ? 'Belgeler kontrol ediliyor…'
+                            : missingTotal > 0
+                                ? 'Toplam $missingTotal eksik belge veya bağlantı var.'
+                                : 'Eksik belge görünmüyor.',
+                        style: const TextStyle(fontWeight: FontWeight.w900),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
