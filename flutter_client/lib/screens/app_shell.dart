@@ -650,16 +650,36 @@ class _MenuTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListTile(
-      leading: Icon(icon),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+      leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: SifaBrand.gold.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 20,
+          color: SifaBrand.deepGold,
+        ),
+      ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w700),
+        style: const TextStyle(fontWeight: FontWeight.w800),
       ),
       trailing: trailing == null
-          ? const Icon(Icons.chevron_right)
+          ? const Icon(
+              Icons.chevron_right,
+              color: SifaBrand.deepGold,
+            )
           : Badge(
               label: Text(trailing!),
-              child: const Icon(Icons.chevron_right),
+              child: const Icon(
+                Icons.chevron_right,
+                color: SifaBrand.deepGold,
+              ),
             ),
       onTap: () => onTap(),
     );
