@@ -6,6 +6,7 @@ import '../services/rental_api_repository.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/sifa_brand.dart';
 import 'billing_period_screen.dart';
 
 class RentalTrackingDetailScreen extends StatefulWidget {
@@ -483,7 +484,7 @@ class _RentalTrackingDetailScreenState
               isScrollable: true,
               tabAlignment: TabAlignment.start,
               tabs: [
-                Tab(text: 'Özet'),
+                Tab(text: 'Genel Bakış'),
                 Tab(text: 'Hareketler'),
                 Tab(text: 'Fiyatlar'),
                 Tab(text: 'Ödemeler'),
@@ -1129,45 +1130,42 @@ class _RentalHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.all(18),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(18),
-          gradient: LinearGradient(
-            colors: [
-              Theme.of(context).colorScheme.primary.withOpacity(0.08),
-              Theme.of(context).colorScheme.surface,
-            ],
-          ),
-        ),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: SifaBrand.ivory,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: SifaBrand.softGrey),
+                  ),
+                  alignment: Alignment.center,
+                  child: const SifaBuildingMark(size: 32, gold: false),
+                ),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         customerName,
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                ),
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              color: SifaBrand.charcoal,
+                            ),
                       ),
                       if (addressLabel != null) ...[
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 2),
                         Text(
                           addressLabel!,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onSurfaceVariant,
-                                  ),
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: SifaBrand.textGrey,
+                              ),
                         ),
                       ],
                     ],
@@ -1176,62 +1174,76 @@ class _RentalHero extends StatelessWidget {
                 const StatusPill(
                   label: 'Aktif',
                   tone: AppStatusTone.success,
-                  icon: Icons.circle,
                   compact: true,
                 ),
               ],
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
                   child: _HeroMetric(
                     label: 'Gönderilen',
                     value: _compactNumber(totals.sent),
+                    icon: Icons.north_east,
+                    background: SifaBrand.successBg,
+                    foreground: SifaBrand.success,
                   ),
                 ),
+                const SizedBox(width: 7),
                 Expanded(
                   child: _HeroMetric(
                     label: 'Gelen',
                     value: _compactNumber(totals.returned),
+                    icon: Icons.south_west,
+                    background: SifaBrand.infoBg,
+                    foreground: SifaBrand.info,
                   ),
                 ),
+                const SizedBox(width: 7),
                 Expanded(
                   child: _HeroMetric(
                     label: 'Müşteride',
                     value: _compactNumber(totals.remaining),
-                    emphasize: true,
+                    icon: Icons.inventory_2_outlined,
+                    background: SifaBrand.goldBg,
+                    foreground: SifaBrand.deepGold,
                   ),
                 ),
               ],
             ),
-            const Divider(height: 24),
-            Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              crossAxisAlignment: WrapCrossAlignment.center,
+            const Divider(height: 22),
+            Row(
               children: [
-                _MetaLine(
-                  icon: Icons.north_east,
-                  text: 'İlk çıkış ${trDate(original)}',
-                ),
-                _MetaLine(
-                  icon: Icons.event_repeat_outlined,
-                  text: 'Sonraki kira ${trDate(nextRenewal)}',
-                ),
-                ActionChip(
-                  avatar: Icon(
-                    invoice == 'invoice_required'
-                        ? Icons.receipt_long_outlined
-                        : Icons.money_off_outlined,
-                    size: 18,
+                Expanded(
+                  child: _MetaLine(
+                    icon: Icons.north_east,
+                    text: 'İlk çıkış ${trDate(original)}',
                   ),
-                  label: Text(
-                    invoice == 'invoice_required' ? 'Faturalı' : 'Faturasız',
+                ),
+                Expanded(
+                  child: _MetaLine(
+                    icon: Icons.event_repeat_outlined,
+                    text: 'Sonraki kira ${trDate(nextRenewal)}',
                   ),
-                  onPressed: onToggleInvoice,
                 ),
               ],
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: ActionChip(
+                avatar: Icon(
+                  invoice == 'invoice_required'
+                      ? Icons.receipt_long_outlined
+                      : Icons.money_off_outlined,
+                  size: 17,
+                ),
+                label: Text(
+                  invoice == 'invoice_required' ? 'Faturalı' : 'Faturasız',
+                ),
+                onPressed: onToggleInvoice,
+              ),
             ),
           ],
         ),
@@ -1248,34 +1260,48 @@ class _RentalHero extends StatelessWidget {
 class _HeroMetric extends StatelessWidget {
   final String label;
   final String value;
-  final bool emphasize;
+  final IconData icon;
+  final Color background;
+  final Color foreground;
 
   const _HeroMetric({
     required this.label,
     required this.value,
-    this.emphasize = false,
+    required this.icon,
+    required this.background,
+    required this.foreground,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-        ),
-        const SizedBox(height: 3),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.w900,
-                color: emphasize ? Theme.of(context).colorScheme.primary : null,
-              ),
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(11),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: foreground),
+          const SizedBox(height: 5),
+          Text(
+            label,
+            maxLines: 1,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: foreground,
+                ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: SifaBrand.charcoal,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }
