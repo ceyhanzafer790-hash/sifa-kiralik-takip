@@ -803,8 +803,19 @@ class _RentalTrackingDetailScreenState
 
           return Card(
             child: ListTile(
-              leading: const CircleAvatar(
-                child: Icon(Icons.price_change_outlined),
+              leading: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: SifaBrand.gold.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.price_change_outlined,
+                  color: SifaBrand.deepGold,
+                  size: 21,
+                ),
               ),
               title: Text(
                 '${rate['product_name']} • ${_money(_double(rate['amount']))} ₺',
@@ -907,8 +918,19 @@ class _RentalTrackingDetailScreenState
                 child: Card(
                   child: ListTile(
                     onTap: () => _openBilling(renewal),
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.receipt_long_outlined),
+                    leading: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: SifaBrand.gold.withOpacity(0.13),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.receipt_long_outlined,
+                        color: SifaBrand.deepGold,
+                        size: 21,
+                      ),
                     ),
                     title: Text(
                       trDate(renewal),
@@ -975,8 +997,19 @@ class _RentalTrackingDetailScreenState
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Card(
                   child: ListTile(
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.attach_file),
+                    leading: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: SifaBrand.gold.withOpacity(0.13),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.attach_file,
+                        color: SifaBrand.deepGold,
+                        size: 21,
+                      ),
                     ),
                     title: Text(
                       doc['original_file_name']?.toString() ?? 'Belge',
@@ -1499,9 +1532,40 @@ class _TimelineTile extends StatelessWidget {
             width: 38,
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 16,
-                  child: Icon(icon, size: 17),
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: switch (tone) {
+                      AppStatusTone.success => SifaBrand.successBg,
+                      AppStatusTone.info => SifaBrand.infoBg,
+                      AppStatusTone.warning => const Color(0xFFFFF4E5),
+                      AppStatusTone.danger => const Color(0xFFFFECEC),
+                      AppStatusTone.neutral => SifaBrand.ivory,
+                    },
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: switch (tone) {
+                        AppStatusTone.success => SifaBrand.success,
+                        AppStatusTone.info => SifaBrand.info,
+                        AppStatusTone.warning => const Color(0xFF9A5D00),
+                        AppStatusTone.danger => const Color(0xFFA53C3C),
+                        AppStatusTone.neutral => SifaBrand.softGrey,
+                      }.withOpacity(0.28),
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    icon,
+                    size: 17,
+                    color: switch (tone) {
+                      AppStatusTone.success => SifaBrand.success,
+                      AppStatusTone.info => SifaBrand.info,
+                      AppStatusTone.warning => const Color(0xFF9A5D00),
+                      AppStatusTone.danger => const Color(0xFFA53C3C),
+                      AppStatusTone.neutral => SifaBrand.textGrey,
+                    },
+                  ),
                 ),
                 if (!isLast)
                   Expanded(
