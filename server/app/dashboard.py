@@ -121,6 +121,26 @@ def dashboard_summary(
 
         cur.execute(
             """
+            select count(*) as count
+            from v_rental_revenue_estimate
+            where coalesce(remaining_quantity, 0) > 0
+            """
+        )
+        active_items = int(cur.fetchone()["count"])
+
+        cur.execute(
+            """
+            select count(*) as count
+            from rental_movements
+            where voided_at is null
+              and movement_date = %s
+            """,
+            (today,),
+        )
+        today_movements = int(cur.fetchone()["count"])
+
+        cur.execute(
+            """
             select
               coalesce(
                 sum(
@@ -280,6 +300,9 @@ def dashboard_summary(
         "today": today,
         "financials_visible": can_view_financials,
         "window_days": days,
+        "active_rental_count": len(rentals),
+        "active_rental_item_count": active_items,
+        "today_movement_count": today_movements,
         "renewals": renewals,
         "renewal_due_today_count": sum(
             1 for r in renewals if r["days_until"] == 0
