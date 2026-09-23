@@ -175,11 +175,11 @@ class _PillarMark extends StatelessWidget {
             bottom: height * 0.08,
             child: Row(
               children: [
-                Container(width: width * 0.22, color: SifaBrand.charcoal),
+                Container(width: width * 0.22, color: foreground),
                 SizedBox(width: width * 0.12),
-                Container(width: width * 0.22, color: SifaBrand.charcoal),
+                Container(width: width * 0.22, color: foreground),
                 SizedBox(width: width * 0.12),
-                Container(width: width * 0.22, color: SifaBrand.charcoal),
+                Container(width: width * 0.22, color: foreground),
               ],
             ),
           ),
