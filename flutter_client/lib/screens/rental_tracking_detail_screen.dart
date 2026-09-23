@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../services/offline_document_queue.dart';
+import '../services/rental_account_summary_service.dart';
 import '../services/rental_api_repository.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
+import '../widgets/status_pill.dart';
+import 'billing_period_screen.dart';
 
 class RentalTrackingDetailScreen extends StatefulWidget {
   final String recordId;
@@ -24,6 +26,7 @@ class _RentalTrackingDetailScreenState
   final repo = RentalApiRepository();
   final roles = RoleService();
   final documentQueue = OfflineDocumentQueue();
+  final summaryService = const RentalAccountSummaryService();
 
   Map<String, dynamic>? detail;
   bool loading = true;
@@ -43,14 +46,15 @@ class _RentalTrackingDetailScreenState
   }
 
   Future<void> _load() async {
-    setState(() {
-      loading = true;
-      error = null;
-    });
+    if (mounted) {
+      setState(() {
+        loading = true;
+        error = null;
+      });
+    }
 
     try {
-      final data =
-          await repo.rentalDetailOfflineFirst(widget.recordId);
+      final data = await repo.rentalDetailOfflineFirst(widget.recordId);
       if (mounted) setState(() => detail = data);
     } catch (e) {
       if (mounted) setState(() => error = e.toString());
@@ -76,21 +80,26 @@ class _RentalTrackingDetailScreenState
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('${item['product_name']} • İade'),
+          title: Text('${item['product_name']} • Malzeme Geri Al'),
           content: SizedBox(
             width: 440,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Kirada kalan: ${_n(remaining)} ${_unit(item['unit'])}'),
-                const SizedBox(height: 10),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    'Müşteride kalan: ${_n(remaining)} ${_unit(item['unit'])}',
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: qty,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
-                    labelText: 'İade miktarı',
-                    border: OutlineInputBorder(),
+                    labelText: 'Gelen miktar',
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -98,7 +107,6 @@ class _RentalTrackingDetailScreenState
                   value: condition,
                   decoration: const InputDecoration(
                     labelText: 'Dönüş durumu',
-                    border: OutlineInputBorder(),
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -123,9 +131,9 @@ class _RentalTrackingDetailScreenState
                 const SizedBox(height: 8),
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  title: const Text('İade tarihi'),
+                  title: const Text('Geliş tarihi'),
                   subtitle: Text(trDate(date)),
-                  trailing: const Icon(Icons.calendar_month),
+                  trailing: const Icon(Icons.calendar_month_outlined),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -148,9 +156,7 @@ class _RentalTrackingDetailScreenState
             ),
             FilledButton(
               onPressed: () {
-                final q = double.tryParse(
-                  qty.text.replaceAll(',', '.'),
-                );
+                final q = double.tryParse(qty.text.replaceAll(',', '.'));
                 if (q == null || q <= 0 || q > remaining) return;
                 Navigator.pop(
                   context,
@@ -181,6 +187,7 @@ class _RentalTrackingDetailScreenState
     );
 
     await _load();
+    _success('Malzeme gelişi kaydedildi.');
   }
 
   Future<void> _addRate(Map<String, dynamic> item) async {
@@ -194,7 +201,7 @@ class _RentalTrackingDetailScreenState
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text('${item['product_name']} • Fiyat'),
+          title: Text('${item['product_name']} • Yeni Fiyat'),
           content: SizedBox(
             width: 440,
             child: Column(
@@ -206,7 +213,6 @@ class _RentalTrackingDetailScreenState
                       const TextInputType.numberWithOptions(decimal: true),
                   decoration: const InputDecoration(
                     labelText: 'Yeni kira fiyatı (₺)',
-                    border: OutlineInputBorder(),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -214,7 +220,6 @@ class _RentalTrackingDetailScreenState
                   value: type,
                   decoration: const InputDecoration(
                     labelText: 'Fiyat tipi',
-                    border: OutlineInputBorder(),
                   ),
                   items: const [
                     DropdownMenuItem(
@@ -235,7 +240,7 @@ class _RentalTrackingDetailScreenState
                   contentPadding: EdgeInsets.zero,
                   title: const Text('Geçerlilik başlangıcı'),
                   subtitle: Text(trDate(effective)),
-                  trailing: const Icon(Icons.calendar_month),
+                  trailing: const Icon(Icons.calendar_month_outlined),
                   onTap: () async {
                     final picked = await showDatePicker(
                       context: context,
@@ -249,7 +254,8 @@ class _RentalTrackingDetailScreenState
                   },
                 ),
                 const Text(
-                  'Eski fiyat silinmez. Yeni fiyat bu tarihten itibaren geçerlidir.',
+                  'Eski fiyat silinmez. Fiyat geçmişinde saklanır.',
+                  style: TextStyle(fontSize: 12),
                 ),
               ],
             ),
@@ -294,6 +300,7 @@ class _RentalTrackingDetailScreenState
     );
 
     await _load();
+    _success('Yeni fiyat kaydedildi. Eski fiyat geçmişte korundu.');
   }
 
   Future<void> _toggleInvoice(String current) async {
@@ -321,170 +328,47 @@ class _RentalTrackingDetailScreenState
       documentType: type,
     );
 
-    if (id != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Belge güvenli kuyruğa alındı. İnternet gelince otomatik yüklenecek.',
-          ),
-        ),
-      );
+    if (id != null) {
+      await _load();
+      _success('Belge eklendi. İnternet yoksa otomatik senkron bekleyecek.');
     }
   }
-
 
   Future<void> _shareWhatsApp() async {
     final current = detail;
     if (current == null) return;
 
-    final rental =
-        Map<String, dynamic>.from(current['rental'] as Map);
-    final items = ((current['items'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    final rates = ((current['rates'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    final billing = ((current['billing_periods'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-
-    final buffer = StringBuffer()
-      ..writeln('ŞİFA İNŞAAT')
-      ..writeln('Kiralama Hesap Özeti')
-      ..writeln()
-      ..writeln(
-        'Müşteri: ${rental['customer_name']?.toString() ?? 'Müşteri'}',
-      );
-
-    if (rental['address_label'] != null) {
-      buffer.writeln('Şantiye: ${rental['address_label']}');
-    }
-
-    final original = DateTime.tryParse(
-      rental['original_outbound_date']?.toString() ?? '',
-    );
-    if (original != null) {
-      buffer.writeln('Başlangıç: ${trDate(original)}');
-    }
-
-    buffer.writeln();
-
-    for (final item in items) {
-      final initial =
-          (item['initial_quantity'] as num?)?.toDouble() ?? 0;
-      final returned =
-          (item['returned_quantity'] as num?)?.toDouble() ?? 0;
-      final remaining =
-          (initial - returned).clamp(0.0, double.infinity).toDouble();
-
-      final itemRates = rates
-          .where(
-            (r) =>
-                r['rental_item_id'].toString() ==
-                item['id'].toString(),
-          )
-          .toList()
-        ..sort(
-          (a, b) => DateTime.parse(
-            b['effective_from'].toString(),
-          ).compareTo(
-            DateTime.parse(a['effective_from'].toString()),
-          ),
-        );
-
-      buffer
-        ..writeln(item['product_name']?.toString() ?? 'Malzeme')
-        ..writeln(
-          'Gönderilen: ${_n(initial)} ${_unit(item['unit'])}',
-        )
-        ..writeln(
-          'İade: ${_n(returned)} ${_unit(item['unit'])}',
-        )
-        ..writeln(
-          'Müşteride: ${_n(remaining)} ${_unit(item['unit'])}',
-        );
-
-      if (itemRates.isNotEmpty) {
-        final rate = itemRates.first;
-        final rateLabel = rate['rate_type'] == 'fixed_monthly'
-            ? 'sabit aylık'
-            : 'birim başına aylık';
-        buffer.writeln(
-          'Güncel fiyat: ${rate['amount']} ₺ ($rateLabel)',
-        );
+    try {
+      final opened = await summaryService.shareWhatsApp(current);
+      if (!opened && mounted) {
+        _error('WhatsApp açılamadı.');
       }
-
-      buffer.writeln();
-    }
-
-    final billed = billing.fold<double>(
-      0,
-      (sum, row) =>
-          sum + ((row['billed_amount'] as num?)?.toDouble() ?? 0),
-    );
-    final paid = billing.fold<double>(
-      0,
-      (sum, row) =>
-          sum + ((row['paid_amount'] as num?)?.toDouble() ?? 0),
-    );
-    final balance = (billed - paid).clamp(0.0, double.infinity);
-
-    if (billed > 0 || paid > 0) {
-      buffer
-        ..writeln('Hesap Durumu')
-        ..writeln('Faturalandırılmış: ${_money(billed)} ₺')
-        ..writeln('Tahsil Edilen: ${_money(paid)} ₺')
-        ..writeln('Kalan: ${_money(balance.toDouble())} ₺')
-        ..writeln();
-    }
-
-    buffer.writeln('Şifa İnşaat Kiralık Takip');
-
-    final summary = buffer.toString().trim();
-    final native = Uri.parse(
-      'whatsapp://send?text=${Uri.encodeComponent(summary)}',
-    );
-
-    var opened = false;
-    if (await canLaunchUrl(native)) {
-      opened = await launchUrl(
-        native,
-        mode: LaunchMode.externalApplication,
-      );
-    }
-
-    if (!opened) {
-      final web = Uri.https('wa.me', '/', {'text': summary});
-      opened = await launchUrl(
-        web,
-        mode: LaunchMode.externalApplication,
-      );
-    }
-
-    if (!opened && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('WhatsApp açılamadı.'),
-        ),
-      );
+    } catch (e) {
+      _error('WhatsApp özeti hazırlanamadı: $e');
     }
   }
 
-  String _money(double value) {
-    final fixed = value.toStringAsFixed(2);
-    final parts = fixed.split('.');
-    final reversed = parts[0].split('').reversed.toList();
-    final groups = <String>[];
+  Future<void> _sharePdf() async {
+    final current = detail;
+    if (current == null) return;
 
-    for (var i = 0; i < reversed.length; i += 3) {
-      groups.add(
-        reversed.skip(i).take(3).toList().reversed.join(),
-      );
+    try {
+      await summaryService.sharePdf(context, current);
+    } catch (e) {
+      _error('PDF hesap özeti hazırlanamadı: $e');
     }
+  }
 
-    final whole = groups.reversed.join('.');
-    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  Future<void> _openBilling(DateTime renewalDate) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => BillingPeriodScreen(
+          rentalId: widget.recordId,
+          renewalDate: renewalDate,
+        ),
+      ),
+    );
+    await _load();
   }
 
   @override
@@ -497,355 +381,672 @@ class _RentalTrackingDetailScreenState
 
     if (detail == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Kiralama Takibi')),
+        appBar: AppBar(title: const Text('Kiralama Detayı')),
         body: Center(child: Text(error ?? 'Kayıt bulunamadı.')),
       );
     }
 
     final rental =
         Map<String, dynamic>.from(detail!['rental'] as Map);
-    final items = ((detail!['items'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    final movements = ((detail!['movements'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    final rates = ((detail!['rates'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
-    final docs = ((detail!['documents'] as List?) ?? const [])
-        .map((e) => Map<String, dynamic>.from(e as Map))
-        .toList();
+    final items = _maps(detail!['items']);
+    final movements = _maps(detail!['movements'])
+      ..sort(
+        (a, b) => DateTime.parse(b['movement_date'].toString())
+            .compareTo(DateTime.parse(a['movement_date'].toString())),
+      );
+    final rates = _maps(detail!['rates'])
+      ..sort(
+        (a, b) => DateTime.parse(b['effective_from'].toString())
+            .compareTo(DateTime.parse(a['effective_from'].toString())),
+      );
+    final docs = _maps(detail!['documents']);
+    final billing = _maps(detail!['billing_periods'])
+      ..sort(
+        (a, b) => DateTime.parse(b['renewal_date'].toString())
+            .compareTo(DateTime.parse(a['renewal_date'].toString())),
+      );
 
-    final original = DateTime.parse(
-      rental['original_outbound_date'].toString(),
-    );
+    final original =
+        DateTime.parse(rental['original_outbound_date'].toString());
     final nextRenewal = nextMonthlyRentalDate(original, DateTime.now());
-    final invoice = rental['invoice_preference']?.toString() ?? 'no_invoice';
+    final invoice =
+        rental['invoice_preference']?.toString() ?? 'no_invoice';
     final pending = rental['pending_sync'] == true;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Kiralama Takibi Detayı'),
-        actions: [
-          if (pending)
-            const Padding(
-              padding: EdgeInsets.only(right: 12),
-              child: Chip(
-                avatar: Icon(Icons.cloud_upload_outlined, size: 18),
-                label: Text('Senkron bekliyor'),
+    final totals = _materialTotals(items);
+    final accountTotals = summaryService.billingTotals(billing);
+
+    return DefaultTabController(
+      length: 5,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text(
+            'Kiralama Detayı',
+            style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          actions: [
+            if (pending)
+              const Padding(
+                padding: EdgeInsets.only(right: 12),
+                child: Center(
+                  child: StatusPill(
+                    label: 'Senkron bekliyor',
+                    tone: AppStatusTone.info,
+                    icon: Icons.cloud_upload_outlined,
+                    compact: true,
+                  ),
+                ),
               ),
-            ),
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
+          ],
+        ),
+        body: Column(
           children: [
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      rental['customer_name']?.toString() ?? 'Müşteri',
-                      style: Theme.of(context)
-                          .textTheme
-                          .headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w900),
-                    ),
-                    if (rental['address_label'] != null)
-                      Text(rental['address_label'].toString()),
-                    if (rental['full_address'] != null)
-                      Text(rental['full_address'].toString()),
-                    const Divider(height: 24),
-                    Text('İlk çıkış: ${trDate(original)}'),
-                    Text(
-                      'Sonraki kira: ${trDate(nextRenewal)}',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    const SizedBox(height: 8),
-                    ActionChip(
-                      avatar: Icon(
-                        invoice == 'invoice_required'
-                            ? Icons.receipt_long_outlined
-                            : Icons.money_off_outlined,
-                      ),
-                      label: Text(
-                        invoice == 'invoice_required'
-                            ? 'Faturalı'
-                            : 'Faturasız',
-                      ),
-                      onPressed: canWrite
-                          ? () => _toggleInvoice(invoice)
-                          : null,
-                    ),
-                  ],
-                ),
+            if (loading) const LinearProgressIndicator(minHeight: 2),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              child: _RentalHero(
+                customerName:
+                    rental['customer_name']?.toString() ?? 'Müşteri',
+                addressLabel: rental['address_label']?.toString(),
+                original: original,
+                nextRenewal: nextRenewal,
+                invoice: invoice,
+                totals: totals,
+                onToggleInvoice:
+                    canWrite ? () => _toggleInvoice(invoice) : null,
               ),
             ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: _shareWhatsApp,
-              icon: const Icon(Icons.chat_outlined),
-              label: const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('WHATSAPP\'TAN HESAP ÖZETİ'),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: _shareWhatsApp,
+                      icon: const Icon(Icons.chat_bubble_outline),
+                      label: const Text('WhatsApp Özeti'),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: _sharePdf,
+                      icon: const Icon(Icons.picture_as_pdf_outlined),
+                      label: const Text('PDF Özeti'),
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            _title(context, 'Kiradaki Malzemeler'),
-            const SizedBox(height: 8),
-            ...items.map((item) {
-              final initial =
-                  (item['initial_quantity'] as num?)?.toDouble() ?? 0;
-              final returned =
-                  (item['returned_quantity'] as num?)?.toDouble() ?? 0;
-              final remaining = initial - returned;
-
-              final itemRates = rates
-                  .where(
-                    (r) =>
-                        r['rental_item_id'].toString() ==
-                        item['id'].toString(),
-                  )
-                  .toList()
-                ..sort(
-                  (a, b) => DateTime.parse(
-                    b['effective_from'].toString(),
-                  ).compareTo(
-                    DateTime.parse(a['effective_from'].toString()),
-                  ),
-                );
-
-              final currentRate =
-                  itemRates.isEmpty ? null : itemRates.first;
-
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          item['product_name'].toString(),
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w900,
-                            fontSize: 17,
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Gönderilen: ${_n(initial)} ${_unit(item['unit'])}',
-                        ),
-                        Text(
-                          'İade: ${_n(returned)} ${_unit(item['unit'])}',
-                        ),
-                        Text(
-                          'Kirada kalan: ${_n(remaining)} ${_unit(item['unit'])}',
-                          style: const TextStyle(fontWeight: FontWeight.w900),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          currentRate == null
-                              ? 'Fiyat girilmedi'
-                              : 'Güncel fiyat: ${currentRate['amount']} ₺ • '
-                                  '${currentRate['rate_type'] == 'fixed_monthly' ? "Sabit aylık" : "Birim başına aylık"}',
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            FilledButton.icon(
-                              onPressed: canWrite && remaining > 0
-                                  ? () => _addReturn(item)
-                                  : null,
-                              icon: const Icon(Icons.keyboard_return),
-                              label: const Text('İade Ekle'),
-                            ),
-                            OutlinedButton.icon(
-                              onPressed: canWrite
-                                  ? () => _addRate(item)
-                                  : null,
-                              icon: const Icon(Icons.price_change_outlined),
-                              label: const Text('Fiyat'),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-            _title(context, 'Belgeler'),
-            const SizedBox(height: 8),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: [
-                        FilledButton.icon(
-                          onPressed: canWrite
-                              ? () => _queueDocument('contract')
-                              : null,
-                          icon: const Icon(Icons.description_outlined),
-                          label: const Text('Kira Sözleşmesi'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: canWrite
-                              ? () => _queueDocument('outbound_delivery')
-                              : null,
-                          icon: const Icon(Icons.north_east),
-                          label: const Text('Giden Belgesi'),
-                        ),
-                        OutlinedButton.icon(
-                          onPressed: canWrite
-                              ? () => _queueDocument('inbound_delivery')
-                              : null,
-                          icon: const Icon(Icons.south_west),
-                          label: const Text('Gelen Belgesi'),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
-                    if (docs.isEmpty)
-                      const Text('Sunucudan senkronize edilmiş belge yok.')
-                    else
-                      ...docs.map(
-                        (d) => ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: const Icon(Icons.attach_file),
-                          title: Text(
-                            d['original_file_name'].toString(),
-                          ),
-                          subtitle: Text(
-                            d['document_type'].toString(),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+            const SizedBox(height: 12),
+            const TabBar(
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              tabs: [
+                Tab(text: 'Özet'),
+                Tab(text: 'Hareketler'),
+                Tab(text: 'Fiyatlar'),
+                Tab(text: 'Ödemeler'),
+                Tab(text: 'Belgeler'),
+              ],
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: TabBarView(
+                children: [
+                  _overviewTab(items, rates, accountTotals),
+                  _movementsTab(movements, items),
+                  _ratesTab(rates),
+                  _paymentsTab(billing, nextRenewal, accountTotals),
+                  _documentsTab(docs),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-            _title(context, 'Hareket Geçmişi'),
-            const SizedBox(height: 8),
-            ...movements.map(
-              (m) {
-                final item = items.firstWhere(
-                  (i) =>
-                      i['id'].toString() ==
-                      m['rental_item_id'].toString(),
-                  orElse: () => {
-                    'product_name': 'Malzeme',
-                    'unit': 'piece',
-                  },
-                );
-
-                final inbound =
-                    m['movement_type'] == 'inbound_return';
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Card(
-                    child: ListTile(
-                      leading: Icon(
-                        inbound ? Icons.south_west : Icons.north_east,
-                      ),
-                      title: Text(
-                        '${inbound ? "Gelen" : "Giden"} '
-                        '${_n((m['quantity'] as num?)?.toDouble() ?? 0)} '
-                        '${_unit(item['unit'])} '
-                        '${item['product_name']}',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: Text(
-                        '${trDate(DateTime.parse(m['movement_date'].toString()))}'
-                        '${m['return_condition'] == null ? "" : " • ${_condition(m['return_condition'].toString())}"}'
-                        '${m['pending_sync'] == true ? " • Senkron bekliyor" : ""}',
-                      ),
-                      trailing: inbound && canWrite
-                          ? IconButton(
-                              tooltip: 'Bu iadeye belge ekle',
-                              onPressed: () => _queueDocument(
-                                'inbound_delivery',
-                                movementId: m['id'].toString(),
-                              ),
-                              icon: const Icon(Icons.attach_file),
-                            )
-                          : !inbound && canWrite
-                              ? IconButton(
-                                  tooltip: 'Bu çıkışa belge ekle',
-                                  onPressed: () => _queueDocument(
-                                    'outbound_delivery',
-                                    movementId: m['id'].toString(),
-                                  ),
-                                  icon: const Icon(Icons.attach_file),
-                                )
-                              : null,
-                    ),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 16),
-            _title(context, 'Fiyat Geçmişi'),
-            const SizedBox(height: 8),
-            if (rates.isEmpty)
-              const Card(
-                child: Padding(
-                  padding: EdgeInsets.all(14),
-                  child: Text('Henüz fiyat geçmişi yok.'),
-                ),
-              )
-            else
-              ...rates.map(
-                (r) => Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Card(
-                    child: ListTile(
-                      leading: const Icon(Icons.price_change_outlined),
-                      title: Text(
-                        '${r['product_name']} • ${r['amount']} ₺',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      subtitle: Text(
-                        '${trDate(DateTime.parse(r['effective_from'].toString()))} tarihinden itibaren'
-                        '${r['pending_sync'] == true ? " • Senkron bekliyor" : ""}',
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            const SizedBox(height: 24),
           ],
         ),
       ),
     );
   }
 
-  Widget _title(BuildContext context, String title) => Text(
-        title,
-        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w900,
+  Widget _overviewTab(
+    List<Map<String, dynamic>> items,
+    List<Map<String, dynamic>> rates,
+    AccountTotals accountTotals,
+  ) {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 100),
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Kiradaki Malzemeler',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              StatusPill(
+                label: '${items.length} kalem',
+                tone: AppStatusTone.neutral,
+                compact: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          if (items.isEmpty)
+            const _EmptyCard(
+              icon: Icons.inventory_2_outlined,
+              title: 'Malzeme bulunmuyor',
+              subtitle: 'Bu kiralama için kayıtlı malzeme yok.',
+            )
+          else
+            ...items.map((item) {
+              final initial =
+                  (item['initial_quantity'] as num?)?.toDouble() ?? 0;
+              final returned =
+                  (item['returned_quantity'] as num?)?.toDouble() ?? 0;
+              final remaining =
+                  (initial - returned).clamp(0.0, double.infinity).toDouble();
+              final currentRate = _currentRate(item, rates);
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                item['product_name']?.toString() ?? 'Malzeme',
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 17,
+                                ),
+                              ),
+                            ),
+                            StatusPill(
+                              label: remaining > 0 ? 'Kirada' : 'Tamamlandı',
+                              tone: remaining > 0
+                                  ? AppStatusTone.success
+                                  : AppStatusTone.neutral,
+                              compact: true,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _MiniMetric(
+                                label: 'Gönderilen',
+                                value:
+                                    '${_n(initial)} ${_unit(item['unit'])}',
+                              ),
+                            ),
+                            Expanded(
+                              child: _MiniMetric(
+                                label: 'Gelen',
+                                value:
+                                    '${_n(returned)} ${_unit(item['unit'])}',
+                              ),
+                            ),
+                            Expanded(
+                              child: _MiniMetric(
+                                label: 'Müşteride',
+                                value:
+                                    '${_n(remaining)} ${_unit(item['unit'])}',
+                                emphasize: true,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        if (initial > 0)
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value: (returned / initial).clamp(0.0, 1.0),
+                              minHeight: 7,
+                            ),
+                          ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                currentRate == null
+                                    ? 'Fiyat girilmedi'
+                                    : 'Güncel fiyat: ${_money(_double(currentRate['amount']))} ₺ • '
+                                        '${currentRate['rate_type'] == 'fixed_monthly' ? 'Sabit aylık' : 'Birim başına aylık'}',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  color: currentRate == null
+                                      ? Theme.of(context).colorScheme.error
+                                      : null,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (canWrite) ...[
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: [
+                              FilledButton.tonalIcon(
+                                onPressed:
+                                    remaining > 0 ? () => _addReturn(item) : null,
+                                icon: const Icon(Icons.keyboard_return),
+                                label: const Text('Malzeme Geri Al'),
+                              ),
+                              OutlinedButton.icon(
+                                onPressed: () => _addRate(item),
+                                icon: const Icon(Icons.price_change_outlined),
+                                label: const Text('Fiyat Güncelle'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }),
+          const SizedBox(height: 14),
+          Text(
+            'Hesap Özeti',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 10),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _MoneyMetric(
+                      label: 'Faturalandırılan',
+                      amount: accountTotals.billed,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MoneyMetric(
+                      label: 'Tahsil Edilen',
+                      amount: accountTotals.paid,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MoneyMetric(
+                      label: 'Kalan',
+                      amount: accountTotals.balance,
+                      emphasize: accountTotals.balance > 0,
+                    ),
+                  ),
+                ],
+              ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _movementsTab(
+    List<Map<String, dynamic>> movements,
+    List<Map<String, dynamic>> items,
+  ) {
+    if (movements.isEmpty) {
+      return const _ScrollableEmpty(
+        icon: Icons.timeline_outlined,
+        title: 'Henüz hareket yok',
+        subtitle: 'Giden ve gelen malzeme hareketleri burada görünecek.',
       );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
+        itemCount: movements.length,
+        itemBuilder: (context, index) {
+          final movement = movements[index];
+          final item = items.firstWhere(
+            (i) =>
+                i['id'].toString() ==
+                movement['rental_item_id'].toString(),
+            orElse: () => {
+              'product_name': 'Malzeme',
+              'unit': 'piece',
+            },
+          );
+          final inbound = movement['movement_type'] == 'inbound_return';
+          final date =
+              DateTime.parse(movement['movement_date'].toString());
+
+          return _TimelineTile(
+            isLast: index == movements.length - 1,
+            icon: inbound ? Icons.south_west : Icons.north_east,
+            tone: inbound ? AppStatusTone.success : AppStatusTone.info,
+            status: inbound ? 'Gelen' : 'Giden',
+            title:
+                '${_n(_double(movement['quantity']))} ${_unit(item['unit'])} ${item['product_name']}',
+            subtitle: [
+              trDate(date),
+              if (movement['return_condition'] != null)
+                _condition(movement['return_condition'].toString()),
+              if (movement['pending_sync'] == true) 'Senkron bekliyor',
+            ].join(' • '),
+            trailing: canWrite
+                ? IconButton(
+                    tooltip: 'Bu harekete belge ekle',
+                    onPressed: () => _queueDocument(
+                      inbound ? 'inbound_delivery' : 'outbound_delivery',
+                      movementId: movement['id'].toString(),
+                    ),
+                    icon: const Icon(Icons.attach_file),
+                  )
+                : null,
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _ratesTab(List<Map<String, dynamic>> rates) {
+    if (rates.isEmpty) {
+      return const _ScrollableEmpty(
+        icon: Icons.price_change_outlined,
+        title: 'Henüz fiyat geçmişi yok',
+        subtitle: 'Fiyat değişiklikleri tarihçeli olarak burada tutulacak.',
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
+        itemCount: rates.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final rate = rates[index];
+          final effective =
+              DateTime.parse(rate['effective_from'].toString());
+
+          return Card(
+            child: ListTile(
+              leading: const CircleAvatar(
+                child: Icon(Icons.price_change_outlined),
+              ),
+              title: Text(
+                '${rate['product_name']} • ${_money(_double(rate['amount']))} ₺',
+                style: const TextStyle(fontWeight: FontWeight.w900),
+              ),
+              subtitle: Text(
+                '${trDate(effective)} tarihinden itibaren • '
+                '${rate['rate_type'] == 'fixed_monthly' ? 'Sabit aylık' : 'Birim başına aylık'}',
+              ),
+              trailing: rate['pending_sync'] == true
+                  ? const StatusPill(
+                      label: 'Bekliyor',
+                      tone: AppStatusTone.info,
+                      compact: true,
+                    )
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _paymentsTab(
+    List<Map<String, dynamic>> billing,
+    DateTime nextRenewal,
+    AccountTotals totals,
+  ) {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _MoneyMetric(
+                      label: 'Toplam Fatura',
+                      amount: totals.billed,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MoneyMetric(
+                      label: 'Tahsilat',
+                      amount: totals.paid,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: _MoneyMetric(
+                      label: 'Kalan',
+                      amount: totals.balance,
+                      emphasize: totals.balance > 0,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          if (canWrite)
+            FilledButton.icon(
+              onPressed: () => _openBilling(nextRenewal),
+              icon: const Icon(Icons.payments_outlined),
+              label: Text(
+                '${trDate(nextRenewal)} Dönemini Aç / Tahsilat Gir',
+              ),
+            ),
+          const SizedBox(height: 16),
+          Text(
+            'Dönemler',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                ),
+          ),
+          const SizedBox(height: 10),
+          if (billing.isEmpty)
+            const _EmptyCard(
+              icon: Icons.receipt_long_outlined,
+              title: 'Henüz fatura veya tahsilat kaydı yok',
+              subtitle: 'Bir kira dönemini açtığında burada görünecek.',
+            )
+          else
+            ...billing.map((period) {
+              final renewal =
+                  DateTime.parse(period['renewal_date'].toString());
+              final billed = _double(period['billed_amount']);
+              final paid = _double(period['paid_amount']);
+              final balance =
+                  (billed - paid).clamp(0.0, double.infinity).toDouble();
+              final paymentStatus =
+                  period['payment_status']?.toString() ?? 'pending';
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: ListTile(
+                    onTap: () => _openBilling(renewal),
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.receipt_long_outlined),
+                    ),
+                    title: Text(
+                      trDate(renewal),
+                      style: const TextStyle(fontWeight: FontWeight.w900),
+                    ),
+                    subtitle: Text(
+                      'Fatura: ${_money(billed)} ₺ • '
+                      'Tahsil: ${_money(paid)} ₺ • '
+                      'Kalan: ${_money(balance)} ₺',
+                    ),
+                    trailing: StatusPill(
+                      label: _paymentLabel(paymentStatus),
+                      tone: _paymentTone(paymentStatus),
+                      compact: true,
+                    ),
+                  ),
+                ),
+              );
+            }),
+        ],
+      ),
+    );
+  }
+
+  Widget _documentsTab(List<Map<String, dynamic>> docs) {
+    return RefreshIndicator(
+      onRefresh: _load,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
+        children: [
+          if (canWrite)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: () => _queueDocument('contract'),
+                  icon: const Icon(Icons.description_outlined),
+                  label: const Text('Kira Sözleşmesi'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _queueDocument('outbound_delivery'),
+                  icon: const Icon(Icons.north_east),
+                  label: const Text('Giden Belgesi'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _queueDocument('inbound_delivery'),
+                  icon: const Icon(Icons.south_west),
+                  label: const Text('Gelen Belgesi'),
+                ),
+              ],
+            ),
+          if (canWrite) const SizedBox(height: 16),
+          if (docs.isEmpty)
+            const _EmptyCard(
+              icon: Icons.folder_open_outlined,
+              title: 'Henüz belge yok',
+              subtitle:
+                  'Sözleşme ve sevkiyat belgelerini kiralamayla ilişkilendirebilirsin.',
+            )
+          else
+            ...docs.map(
+              (doc) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: ListTile(
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.attach_file),
+                    ),
+                    title: Text(
+                      doc['original_file_name']?.toString() ?? 'Belge',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    subtitle: Text(
+                      _documentLabel(
+                        doc['document_type']?.toString() ?? '',
+                      ),
+                    ),
+                    trailing: StatusPill(
+                      label:
+                          doc['rental_movement_id'] == null ? 'Kiralama' : 'Hareket',
+                      tone: AppStatusTone.neutral,
+                      compact: true,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Map<String, dynamic>? _currentRate(
+    Map<String, dynamic> item,
+    List<Map<String, dynamic>> rates,
+  ) {
+    final itemRates = rates
+        .where(
+          (r) =>
+              r['rental_item_id'].toString() ==
+              item['id'].toString(),
+        )
+        .toList()
+      ..sort(
+        (a, b) => DateTime.parse(b['effective_from'].toString())
+            .compareTo(DateTime.parse(a['effective_from'].toString())),
+      );
+    return itemRates.isEmpty ? null : itemRates.first;
+  }
+
+  _MaterialTotals _materialTotals(List<Map<String, dynamic>> items) {
+    double sent = 0;
+    double returned = 0;
+
+    for (final item in items) {
+      sent += _double(item['initial_quantity']);
+      returned += _double(item['returned_quantity']);
+    }
+
+    return _MaterialTotals(
+      sent: sent,
+      returned: returned,
+      remaining: (sent - returned).clamp(0.0, double.infinity).toDouble(),
+    );
+  }
+
+  List<Map<String, dynamic>> _maps(dynamic value) =>
+      ((value as List?) ?? const [])
+          .map((e) => Map<String, dynamic>.from(e as Map))
+          .toList();
+
+  double _double(dynamic value) => (value as num?)?.toDouble() ?? 0;
 
   String _n(double value) => value == value.roundToDouble()
       ? value.toInt().toString()
-      : value.toString();
+      : value
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+
+  String _money(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final chars = parts[0].split('').reversed.toList();
+    final groups = <String>[];
+
+    for (var i = 0; i < chars.length; i += 3) {
+      groups.add(chars.skip(i).take(3).toList().reversed.join());
+    }
+
+    final whole = groups.reversed.join('.');
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  }
 
   String _unit(dynamic unit) => switch (unit?.toString()) {
         'sheet' => 'Levha',
@@ -863,4 +1064,495 @@ class _RentalTrackingDetailScreenState
         'scrap' => 'Hurda',
         _ => 'Kullanılabilir',
       };
+
+  String _paymentLabel(String value) => switch (value) {
+        'paid' => 'Ödendi',
+        'partial' => 'Kısmi',
+        _ => 'Bekliyor',
+      };
+
+  AppStatusTone _paymentTone(String value) => switch (value) {
+        'paid' => AppStatusTone.success,
+        'partial' => AppStatusTone.warning,
+        _ => AppStatusTone.danger,
+      };
+
+  String _documentLabel(String value) => switch (value) {
+        'contract' => 'Kira sözleşmesi',
+        'outbound_delivery' => 'Giden sevkiyat belgesi',
+        'inbound_delivery' => 'Gelen / iade belgesi',
+        _ => 'Diğer belge',
+      };
+
+  void _success(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _error(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+}
+
+class _RentalHero extends StatelessWidget {
+  final String customerName;
+  final String? addressLabel;
+  final DateTime original;
+  final DateTime nextRenewal;
+  final String invoice;
+  final _MaterialTotals totals;
+  final VoidCallback? onToggleInvoice;
+
+  const _RentalHero({
+    required this.customerName,
+    required this.addressLabel,
+    required this.original,
+    required this.nextRenewal,
+    required this.invoice,
+    required this.totals,
+    required this.onToggleInvoice,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          gradient: LinearGradient(
+            colors: [
+              Theme.of(context).colorScheme.primary.withOpacity(0.08),
+              Theme.of(context).colorScheme.surface,
+            ],
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        customerName,
+                        style:
+                            Theme.of(context).textTheme.headlineSmall?.copyWith(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                      ),
+                      if (addressLabel != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          addressLabel!,
+                          style:
+                              Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                    color: Theme.of(context)
+                                        .colorScheme
+                                        .onSurfaceVariant,
+                                  ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const StatusPill(
+                  label: 'Aktif',
+                  tone: AppStatusTone.success,
+                  icon: Icons.circle,
+                  compact: true,
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Row(
+              children: [
+                Expanded(
+                  child: _HeroMetric(
+                    label: 'Gönderilen',
+                    value: _compactNumber(totals.sent),
+                  ),
+                ),
+                Expanded(
+                  child: _HeroMetric(
+                    label: 'Gelen',
+                    value: _compactNumber(totals.returned),
+                  ),
+                ),
+                Expanded(
+                  child: _HeroMetric(
+                    label: 'Müşteride',
+                    value: _compactNumber(totals.remaining),
+                    emphasize: true,
+                  ),
+                ),
+              ],
+            ),
+            const Divider(height: 24),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                _MetaLine(
+                  icon: Icons.north_east,
+                  text: 'İlk çıkış ${trDate(original)}',
+                ),
+                _MetaLine(
+                  icon: Icons.event_repeat_outlined,
+                  text: 'Sonraki kira ${trDate(nextRenewal)}',
+                ),
+                ActionChip(
+                  avatar: Icon(
+                    invoice == 'invoice_required'
+                        ? Icons.receipt_long_outlined
+                        : Icons.money_off_outlined,
+                    size: 18,
+                  ),
+                  label: Text(
+                    invoice == 'invoice_required' ? 'Faturalı' : 'Faturasız',
+                  ),
+                  onPressed: onToggleInvoice,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static String _compactNumber(double value) =>
+      value == value.roundToDouble()
+          ? value.toInt().toString()
+          : value.toStringAsFixed(1);
+}
+
+class _HeroMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasize;
+
+  const _HeroMetric({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: emphasize ? Theme.of(context).colorScheme.primary : null,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MiniMetric extends StatelessWidget {
+  final String label;
+  final String value;
+  final bool emphasize;
+
+  const _MiniMetric({
+    required this.label,
+    required this.value,
+    this.emphasize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w900,
+                color: emphasize ? Theme.of(context).colorScheme.primary : null,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _MoneyMetric extends StatelessWidget {
+  final String label;
+  final double amount;
+  final bool emphasize;
+
+  const _MoneyMetric({
+    required this.label,
+    required this.amount,
+    this.emphasize = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final value = _formatMoney(amount);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+        ),
+        const SizedBox(height: 4),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            '$value ₺',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: emphasize
+                      ? Theme.of(context).colorScheme.error
+                      : null,
+                ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static String _formatMoney(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final chars = parts[0].split('').reversed.toList();
+    final groups = <String>[];
+
+    for (var i = 0; i < chars.length; i += 3) {
+      groups.add(chars.skip(i).take(3).toList().reversed.join());
+    }
+
+    final whole = groups.reversed.join('.');
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  }
+}
+
+class _TimelineTile extends StatelessWidget {
+  final bool isLast;
+  final IconData icon;
+  final AppStatusTone tone;
+  final String status;
+  final String title;
+  final String subtitle;
+  final Widget? trailing;
+
+  const _TimelineTile({
+    required this.isLast,
+    required this.icon,
+    required this.tone,
+    required this.status,
+    required this.title,
+    required this.subtitle,
+    this.trailing,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 38,
+            child: Column(
+              children: [
+                CircleAvatar(
+                  radius: 16,
+                  child: Icon(icon, size: 17),
+                ),
+                if (!isLast)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 4),
+                      color: Theme.of(context).dividerColor,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Card(
+                child: ListTile(
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          title,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      StatusPill(
+                        label: status,
+                        tone: tone,
+                        compact: true,
+                      ),
+                    ],
+                  ),
+                  subtitle: Padding(
+                    padding: const EdgeInsets.only(top: 5),
+                    child: Text(subtitle),
+                  ),
+                  trailing: trailing,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaLine extends StatelessWidget {
+  final IconData icon;
+  final String text;
+
+  const _MetaLine({
+    required this.icon,
+    required this.text,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16),
+        const SizedBox(width: 5),
+        Text(
+          text,
+          style: Theme.of(context).textTheme.bodySmall,
+        ),
+      ],
+    );
+  }
+}
+
+class _EmptyCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _EmptyCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(22),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 34,
+              color: Theme.of(context).colorScheme.outline,
+            ),
+            const SizedBox(height: 10),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w900),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ScrollableEmpty extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _ScrollableEmpty({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 24, 16, 100),
+      children: [
+        _EmptyCard(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+        ),
+      ],
+    );
+  }
+}
+
+class _MaterialTotals {
+  final double sent;
+  final double returned;
+  final double remaining;
+
+  const _MaterialTotals({
+    required this.sent,
+    required this.returned,
+    required this.remaining,
+  });
 }
