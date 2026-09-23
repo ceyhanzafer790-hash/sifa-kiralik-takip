@@ -20,9 +20,6 @@ import 'reminder_center_screen.dart';
 import 'rentals_overview_screen.dart';
 import 'reports_screen.dart';
 import 'shipment_screen.dart';
-import 'stock_count_screen.dart';
-import 'stock_maintenance_screen.dart';
-import 'stock_source_screen.dart';
 
 class AppShell extends StatefulWidget {
   final Future<void> Function() onLogout;
@@ -165,7 +162,6 @@ class _AppShellState extends State<AppShell> {
       _NavItem(
         page: _MorePage(
           role: role ?? AppRole.viewer,
-          readOnly: _readOnly,
           syncStatus: syncStatus,
           onOpen: _push,
           onRefreshRuntime: _refreshRuntime,
@@ -424,7 +420,6 @@ class _AppShellState extends State<AppShell> {
 
 class _MorePage extends StatelessWidget {
   final AppRole role;
-  final bool readOnly;
   final AutoSyncStatus syncStatus;
   final void Function(Widget page) onOpen;
   final Future<void> Function() onRefreshRuntime;
@@ -433,7 +428,6 @@ class _MorePage extends StatelessWidget {
 
   const _MorePage({
     required this.role,
-    required this.readOnly,
     required this.syncStatus,
     required this.onOpen,
     required this.onRefreshRuntime,
@@ -443,8 +437,6 @@ class _MorePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final canWrite = role != AppRole.viewer && !readOnly;
-
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
       children: [
