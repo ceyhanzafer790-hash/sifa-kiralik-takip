@@ -5,6 +5,7 @@ import '../services/api_config.dart';
 import '../services/customer_api_repository.dart';
 import '../services/local_domain_cache.dart';
 import '../services/role_service.dart';
+import '../widgets/status_pill.dart';
 import 'customer_create_screen.dart';
 import 'customer_detail_screen.dart';
 
@@ -24,6 +25,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   bool canWrite = false;
   bool loading = true;
   List<Customer> customers = [];
+  Map<String, int> activeRentalsByCustomer = {};
 
   @override
   void initState() {
@@ -38,7 +40,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => loading = true);
+    if (mounted) setState(() => loading = true);
 
     final local = await cache.customers();
     final localCustomers = local
@@ -47,6 +49,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
     if (mounted && localCustomers.isNotEmpty) {
       setState(() => customers = localCustomers);
+      await _loadStats(localCustomers);
     }
 
     if (ApiConfig.configured) {
@@ -72,12 +75,27 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         }
 
         if (mounted) setState(() => customers = cloudCustomers);
+        await _loadStats(cloudCustomers);
       } catch (_) {
-        // offline cache remains visible
+        // Offline cache görünür kalır.
       }
     }
 
     if (mounted) setState(() => loading = false);
+  }
+
+  Future<void> _loadStats(List<Customer> values) async {
+    final stats = <String, int>{};
+
+    for (final customer in values) {
+      final rentals = await cache.rentalsForCustomer(customer.id);
+      stats[customer.id] =
+          rentals.where((r) => r.status == 'active').length;
+    }
+
+    if (mounted) {
+      setState(() => activeRentalsByCustomer = stats);
+    }
   }
 
   Future<void> _createCustomer() async {
@@ -86,7 +104,17 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         builder: (_) => const CustomerCreateScreen(),
       ),
     );
-    if (id != null) await _load();
+
+    if (id != null) {
+      await _load();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Müşteri kaydedildi.'),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -97,95 +125,229 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
         .toList();
 
     return Scaffold(
-      floatingActionButton: canWrite
-          ? FloatingActionButton.extended(
-              onPressed: _createCustomer,
-              icon: const Icon(Icons.person_add_alt_1),
-              label: const Text('Müşteri Ekle'),
-            )
-          : null,
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                labelText: 'Müşteri ara',
-                border: OutlineInputBorder(),
+      body: RefreshIndicator(
+        onRefresh: _load,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            SliverPadding(
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+              sliver: SliverToBoxAdapter(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Müşteriler',
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineMedium
+                                ?.copyWith(fontWeight: FontWeight.w900),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            '${customers.length} müşteri • kiralama ve hesap görünümü',
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onSurfaceVariant,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (canWrite)
+                      FilledButton.tonalIcon(
+                        onPressed: _createCustomer,
+                        icon: const Icon(Icons.person_add_alt_1),
+                        label: const Text('Ekle'),
+                      ),
+                  ],
+                ),
               ),
-              onChanged: (value) => setState(() => query = value),
             ),
-          ),
-          if (loading) const LinearProgressIndicator(),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: _load,
-              child: filtered.isEmpty
-                  ? ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(24, 40, 24, 90),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _CustomerSearchHeader(
+                query: query,
+                onChanged: (value) => setState(() => query = value),
+                loading: loading,
+              ),
+            ),
+            if (!loading && filtered.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         Icon(
                           Icons.people_outline,
-                          size: 54,
+                          size: 50,
                           color: Theme.of(context).colorScheme.outline,
                         ),
-                        const SizedBox(height: 14),
+                        const SizedBox(height: 12),
                         Text(
                           query.trim().isEmpty
                               ? 'Henüz müşteri kaydı yok.'
-                              : 'Aramaya uyan müşteri bulunamadı.',
+                              : 'Aramana uyan müşteri bulunamadı.',
                           textAlign: TextAlign.center,
-                          style: Theme.of(context).textTheme.titleMedium,
+                          style: const TextStyle(fontWeight: FontWeight.w800),
                         ),
-                        if (query.trim().isEmpty && canWrite) ...[
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Sağ alttaki Müşteri Ekle düğmesiyle ilk gerçek kaydı oluşturabilirsiniz.',
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
                       ],
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(12, 0, 12, 90),
-                      itemCount: filtered.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 6),
-                      itemBuilder: (context, index) {
-                        final customer = filtered[index];
-                        return Card(
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              child: Text(
-                                customer.name.isEmpty
-                                    ? '?'
-                                    : customer.name.substring(0, 1).toUpperCase(),
+                    ),
+                  ),
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 110),
+                sliver: SliverList.separated(
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final customer = filtered[index];
+                    final active = activeRentalsByCustomer[customer.id] ?? 0;
+
+                    return Card(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(18),
+                        onTap: () async {
+                          await Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => CustomerDetailScreen(
+                                customer: customer,
                               ),
                             ),
-                            title: Text(
-                              customer.name,
-                              style: const TextStyle(fontWeight: FontWeight.w800),
-                            ),
-                            subtitle: const Text('Satılanlar • Kiralananlar'),
-                            trailing: const Icon(Icons.chevron_right),
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) => CustomerDetailScreen(
-                                    customer: customer,
+                          );
+                          await _loadStats(customers);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 23,
+                                child: Text(
+                                  customer.name.isEmpty
+                                      ? '?'
+                                      : customer.name
+                                          .substring(0, 1)
+                                          .toUpperCase(),
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
                                   ),
                                 ),
-                              );
-                            },
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      customer.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      active > 0
+                                          ? '$active aktif kiralama'
+                                          : 'Aktif kiralama yok',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              StatusPill(
+                                label: active > 0 ? 'Aktif' : 'Pasif',
+                                tone: active > 0
+                                    ? AppStatusTone.success
+                                    : AppStatusTone.neutral,
+                                compact: true,
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.chevron_right),
+                            ],
                           ),
-                        );
-                      },
-                    ),
-            ),
-          ),
-        ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
+  }
+}
+
+class _CustomerSearchHeader extends SliverPersistentHeaderDelegate {
+  final String query;
+  final ValueChanged<String> onChanged;
+  final bool loading;
+
+  const _CustomerSearchHeader({
+    required this.query,
+    required this.onChanged,
+    required this.loading,
+  });
+
+  @override
+  double get minExtent => 68;
+
+  @override
+  double get maxExtent => 68;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      elevation: overlapsContent ? 1 : 0,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 5, 16, 8),
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            TextFormField(
+              initialValue: query,
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Müşteri ara',
+                contentPadding: EdgeInsets.symmetric(vertical: 10),
+              ),
+              onChanged: onChanged,
+            ),
+            if (loading)
+              const Align(
+                alignment: Alignment.bottomCenter,
+                child: LinearProgressIndicator(minHeight: 2),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _CustomerSearchHeader oldDelegate) {
+    return oldDelegate.query != query ||
+        oldDelegate.loading != loading;
   }
 }
