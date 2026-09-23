@@ -138,19 +138,27 @@ class _AppShellState extends State<AppShell> {
         ),
       ),
       const _NavItem(
-        page: RentalsOverviewScreen(),
-        destination: NavigationDestination(
-          icon: Icon(Icons.event_repeat_outlined),
-          selectedIcon: Icon(Icons.event_repeat),
-          label: 'Kiralamalar',
-        ),
-      ),
-      const _NavItem(
         page: CustomerListScreen(),
         destination: NavigationDestination(
           icon: Icon(Icons.people_outline),
           selectedIcon: Icon(Icons.people),
           label: 'Müşteriler',
+        ),
+      ),
+      const _NavItem(
+        page: RentalsOverviewScreen(),
+        destination: NavigationDestination(
+          icon: Icon(Icons.inventory_2_outlined),
+          selectedIcon: Icon(Icons.inventory_2),
+          label: 'Kiralamalar',
+        ),
+      ),
+      const _NavItem(
+        page: ReportsScreen(),
+        destination: NavigationDestination(
+          icon: Icon(Icons.bar_chart_outlined),
+          selectedIcon: Icon(Icons.bar_chart),
+          label: 'Raporlar',
         ),
       ),
       _NavItem(
@@ -167,9 +175,9 @@ class _AppShellState extends State<AppShell> {
           onLogout: widget.onLogout,
         ),
         destination: const NavigationDestination(
-          icon: Icon(Icons.grid_view_outlined),
-          selectedIcon: Icon(Icons.grid_view_rounded),
-          label: 'Daha Fazla',
+          icon: Icon(Icons.more_horiz),
+          selectedIcon: Icon(Icons.more_horiz),
+          label: 'Diğer',
         ),
       ),
     ];
@@ -285,7 +293,7 @@ class _AppShellState extends State<AppShell> {
                 subtitle: 'Aktif kiralamayı seçip iade hareketi ekle.',
                 onTap: () {
                   Navigator.pop(context);
-                  setState(() => index = 1);
+                  setState(() => index = 2);
                 },
               ),
               if (role == AppRole.admin)
