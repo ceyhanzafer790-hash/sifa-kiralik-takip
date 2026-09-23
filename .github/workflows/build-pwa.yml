@@ -2,6 +2,15 @@ name: PWA Build
 
 on:
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'flutter_client/**'
+      - 'scripts/prepare_pwa.py'
+      - 'scripts/register_pwa_worker.py'
+      - 'scripts/sifa_service_worker.js'
+      - 'scripts/flutter_bootstrap_pwa.js'
+      - '.github/workflows/build-pwa.yml'
   push:
     branches: [ main, v0.25-redesign, pwa-v0.24, pwa-web-compat-fix ]
     paths:
