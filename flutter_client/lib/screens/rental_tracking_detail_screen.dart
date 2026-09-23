@@ -519,8 +519,9 @@ class _RentalTrackingDetailScreenState
                 nextRenewal: nextRenewal,
                 invoice: invoice,
                 totals: totals,
-                onToggleInvoice:
-                    canWrite ? () => _toggleInvoice(invoice) : null,
+                onToggleInvoice: canWrite && !widget.focusReturn
+                    ? () => _toggleInvoice(invoice)
+                    : null,
               ),
             ),
             if (!widget.focusReturn)
@@ -547,36 +548,43 @@ class _RentalTrackingDetailScreenState
                 ),
               ),
             const SizedBox(height: 12),
-            const TabBar(
-              isScrollable: true,
-              tabAlignment: TabAlignment.start,
-              labelColor: SifaBrand.charcoal,
-              unselectedLabelColor: SifaBrand.textGrey,
-              indicatorColor: SifaBrand.gold,
-              indicatorWeight: 3,
-              dividerColor: Colors.transparent,
-              labelStyle: TextStyle(fontWeight: FontWeight.w900),
-              unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w700),
-              tabs: [
-                Tab(text: 'Genel Bakış'),
-                Tab(text: 'Hareketler'),
-                Tab(text: 'Fiyatlar'),
-                Tab(text: 'Ödemeler'),
-                Tab(text: 'Belgeler'),
-              ],
-            ),
-            const Divider(height: 1),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _overviewTab(items, rates, accountTotals),
-                  _movementsTab(movements, items),
-                  _ratesTab(rates),
-                  _paymentsTab(billing, nextRenewal, accountTotals),
-                  _documentsTab(docs),
+            if (widget.focusReturn)
+              Expanded(
+                child: _overviewTab(items, rates, accountTotals),
+              )
+            else ...[
+              const TabBar(
+                isScrollable: true,
+                tabAlignment: TabAlignment.start,
+                labelColor: SifaBrand.charcoal,
+                unselectedLabelColor: SifaBrand.textGrey,
+                indicatorColor: SifaBrand.gold,
+                indicatorWeight: 3,
+                dividerColor: Colors.transparent,
+                labelStyle: TextStyle(fontWeight: FontWeight.w900),
+                unselectedLabelStyle:
+                    TextStyle(fontWeight: FontWeight.w700),
+                tabs: [
+                  Tab(text: 'Genel Bakış'),
+                  Tab(text: 'Hareketler'),
+                  Tab(text: 'Fiyatlar'),
+                  Tab(text: 'Ödemeler'),
+                  Tab(text: 'Belgeler'),
                 ],
               ),
-            ),
+              const Divider(height: 1),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    _overviewTab(items, rates, accountTotals),
+                    _movementsTab(movements, items),
+                    _ratesTab(rates),
+                    _paymentsTab(billing, nextRenewal, accountTotals),
+                    _documentsTab(docs),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),
@@ -740,44 +748,46 @@ class _RentalTrackingDetailScreenState
                 ),
               );
             }),
-          const SizedBox(height: 14),
-          Text(
-            'Hesap Özeti',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.w900,
+          if (!widget.focusReturn) ...[
+            const SizedBox(height: 14),
+            Text(
+              'Hesap Özeti',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+            ),
+            const SizedBox(height: 10),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _MoneyMetric(
+                        label: 'Faturalandırılan',
+                        amount: accountTotals.billed,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MoneyMetric(
+                        label: 'Tahsil Edilen',
+                        amount: accountTotals.paid,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MoneyMetric(
+                        label: 'Kalan',
+                        amount: accountTotals.balance,
+                        emphasize: accountTotals.balance > 0,
+                      ),
+                    ),
+                  ],
                 ),
-          ),
-          const SizedBox(height: 10),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _MoneyMetric(
-                      label: 'Faturalandırılan',
-                      amount: accountTotals.billed,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _MoneyMetric(
-                      label: 'Tahsil Edilen',
-                      amount: accountTotals.paid,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: _MoneyMetric(
-                      label: 'Kalan',
-                      amount: accountTotals.balance,
-                      emphasize: accountTotals.balance > 0,
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
+          ],
         ],
       ),
     );
