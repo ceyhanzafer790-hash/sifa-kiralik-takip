@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/customer_api_repository.dart';
 import '../services/report_download_service.dart';
 import '../services/role_service.dart';
+import '../widgets/sifa_brand.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -282,9 +283,19 @@ class _ReportCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Icon(icon),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: SifaBrand.gold.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: SifaBrand.deepGold,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -294,7 +305,7 @@ class _ReportCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
