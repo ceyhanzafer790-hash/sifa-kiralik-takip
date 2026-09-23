@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/seed_products.dart';
 import '../models/models.dart';
+import '../widgets/sifa_brand.dart';
 
 class MaterialsScreen extends StatefulWidget {
   const MaterialsScreen({super.key});
@@ -28,7 +29,20 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Malzemeler',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.w900,
+                    color: SifaBrand.charcoal,
+                  ),
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 6, 16, 8),
           child: TextField(
             decoration: const InputDecoration(
               prefixIcon: Icon(Icons.search),
@@ -75,6 +89,17 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
               final p = filtered[index];
               return Card(
                 child: ListTile(
+                  leading: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: SifaBrand.ivory,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: SifaBrand.softGrey),
+                    ),
+                    alignment: Alignment.center,
+                    child: const SifaBuildingMark(size: 26),
+                  ),
                   title: Text(
                     p.name,
                     style: const TextStyle(fontWeight: FontWeight.w700),
