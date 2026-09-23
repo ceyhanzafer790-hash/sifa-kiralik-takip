@@ -410,10 +410,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ? value.toInt().toString()
       : value
           .toStringAsFixed(2)
-          .replaceFirst(RegExp(r'0+
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+
+  String _unit(dynamic unit) => switch (unit?.toString()) {
+        'sheet' => 'Levha',
+        'meter' => 'Metre',
+        'squareMeter' || 'square_meter' => 'm²',
+        'cubicMeter' || 'cubic_meter' => 'm³',
+        'kilogram' => 'kg',
+        'liter' => 'Litre',
+        'set' => 'Takım',
+        _ => 'Adet',
+      };
+
+  String _displayDate(dynamic raw) {
     final d = DateTime.tryParse(raw.toString());
     return d == null ? raw.toString() : trDate(d);
   }
+
 }
 
 class _MetricCard extends StatelessWidget {
