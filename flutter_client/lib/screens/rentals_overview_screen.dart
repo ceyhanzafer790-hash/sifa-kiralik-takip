@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/local_domain_cache.dart';
 import '../services/rental_date_service.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/sifa_brand.dart';
 import 'rental_tracking_detail_screen.dart';
 
 enum _RentalFilter {
@@ -13,7 +14,12 @@ enum _RentalFilter {
 }
 
 class RentalsOverviewScreen extends StatefulWidget {
-  const RentalsOverviewScreen({super.key});
+  final bool returnMode;
+
+  const RentalsOverviewScreen({
+    super.key,
+    this.returnMode = false,
+  });
 
   @override
   State<RentalsOverviewScreen> createState() => _RentalsOverviewScreenState();
@@ -172,6 +178,22 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
     final filtered = _filtered;
 
     return Scaffold(
+      appBar: widget.returnMode
+          ? AppBar(
+              title: const Text(
+                'Malzeme Geri Al',
+                style: TextStyle(fontWeight: FontWeight.w900),
+              ),
+              bottom: const PreferredSize(
+                preferredSize: Size.fromHeight(1),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: SifaBrand.gold,
+                ),
+              ),
+            )
+          : null,
       body: RefreshIndicator(
         onRefresh: _load,
         child: CustomScrollView(
@@ -184,7 +206,9 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Kiralamalar',
+                      widget.returnMode
+                          ? 'Aktif Kiralamayı Seç'
+                          : 'Kiralamalar',
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w900,
@@ -192,7 +216,9 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Kimde ne var, ne eksik ve hangi hesap açık tek yerde.',
+                      widget.returnMode
+                          ? 'İade gelecek müşteriyi veya şantiyeyi seç.'
+                          : 'Kimde ne var, ne eksik ve hangi hesap açık tek yerde.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                             color:
                                 Theme.of(context).colorScheme.onSurfaceVariant,
@@ -211,6 +237,7 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
               delegate: _SearchFilterHeader(
                 query: query,
                 filter: filter,
+                returnMode: widget.returnMode,
                 onQueryChanged: (value) => setState(() => query = value),
                 onFilterChanged: (value) => setState(() => filter = value),
                 counts: {
@@ -267,6 +294,7 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                             MaterialPageRoute(
                               builder: (_) => RentalTrackingDetailScreen(
                                 recordId: row.id,
+                                focusReturn: widget.returnMode,
                               ),
                             ),
                           );
@@ -383,11 +411,47 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                               ),
                               if (row.remainingTotal > 0) ...[
                                 const SizedBox(height: 10),
-                                Text(
-                                  'Toplam kalan miktar: ${_number(row.remainingTotal)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Toplam kalan miktar: ${_number(row.remainingTotal)}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w900,
+                                        ),
+                                      ),
+                                    ),
+                                    if (widget.returnMode)
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 10,
+                                          vertical: 7,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: SifaBrand.goldBg,
+                                          borderRadius:
+                                              BorderRadius.circular(999),
+                                        ),
+                                        child: const Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.keyboard_return,
+                                              size: 15,
+                                              color: SifaBrand.deepGold,
+                                            ),
+                                            SizedBox(width: 5),
+                                            Text(
+                                              'İade Seç',
+                                              style: TextStyle(
+                                                color: SifaBrand.deepGold,
+                                                fontWeight: FontWeight.w900,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                  ],
                                 ),
                               ],
                             ],
@@ -438,6 +502,7 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
 class _SearchFilterHeader extends SliverPersistentHeaderDelegate {
   final String query;
   final _RentalFilter filter;
+  final bool returnMode;
   final ValueChanged<String> onQueryChanged;
   final ValueChanged<_RentalFilter> onFilterChanged;
   final Map<_RentalFilter, int> counts;
@@ -445,16 +510,17 @@ class _SearchFilterHeader extends SliverPersistentHeaderDelegate {
   const _SearchFilterHeader({
     required this.query,
     required this.filter,
+    required this.returnMode,
     required this.onQueryChanged,
     required this.onFilterChanged,
     required this.counts,
   });
 
   @override
-  double get minExtent => 122;
+  double get minExtent => returnMode ? 62 : 122;
 
   @override
-  double get maxExtent => 122;
+  double get maxExtent => returnMode ? 62 : 122;
 
   @override
   Widget build(
@@ -481,35 +547,37 @@ class _SearchFilterHeader extends SliverPersistentHeaderDelegate {
                 onChanged: onQueryChanged,
               ),
             ),
-            const SizedBox(height: 7),
-            SizedBox(
-              height: 42,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: [
-                  _filterChip(
-                    _RentalFilter.active,
-                    'Aktif',
-                    Icons.circle_outlined,
-                  ),
-                  _filterChip(
-                    _RentalFilter.completed,
-                    'Tamamlandı',
-                    Icons.check_circle_outline,
-                  ),
-                  _filterChip(
-                    _RentalFilter.missingDocument,
-                    'Eksik Belgeli',
-                    Icons.description_outlined,
-                  ),
-                  _filterChip(
-                    _RentalFilter.receivable,
-                    'Tahsilat Bekleyen',
-                    Icons.payments_outlined,
-                  ),
-                ],
+            if (!returnMode) ...[
+              const SizedBox(height: 7),
+              SizedBox(
+                height: 42,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  children: [
+                    _filterChip(
+                      _RentalFilter.active,
+                      'Aktif',
+                      Icons.circle_outlined,
+                    ),
+                    _filterChip(
+                      _RentalFilter.completed,
+                      'Tamamlandı',
+                      Icons.check_circle_outline,
+                    ),
+                    _filterChip(
+                      _RentalFilter.missingDocument,
+                      'Eksik Belgeli',
+                      Icons.description_outlined,
+                    ),
+                    _filterChip(
+                      _RentalFilter.receivable,
+                      'Tahsilat Bekleyen',
+                      Icons.payments_outlined,
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
@@ -537,6 +605,7 @@ class _SearchFilterHeader extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(covariant _SearchFilterHeader oldDelegate) {
     return oldDelegate.query != query ||
         oldDelegate.filter != filter ||
+        oldDelegate.returnMode != returnMode ||
         oldDelegate.counts.toString() != counts.toString();
   }
 }
