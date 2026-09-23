@@ -255,6 +255,14 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           customer.name,
           style: const TextStyle(fontWeight: FontWeight.w900),
         ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
       ),
       body: RefreshIndicator(
         onRefresh: _loadSummary,
@@ -262,33 +270,28 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
           children: [
             Card(
-              child: Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  gradient: const LinearGradient(
-                    colors: [
-                      Color(0xFFFFFFFF),
-                      Color(0xFFFFFBEE),
-                    ],
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: SifaBrand.charcoal,
+                    padding: const EdgeInsets.fromLTRB(16, 16, 14, 16),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Container(
-                          width: 48,
-                          height: 48,
+                          width: 50,
+                          height: 50,
                           decoration: BoxDecoration(
-                            color: SifaBrand.ivory,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: SifaBrand.softGrey),
+                            color: Colors.white.withOpacity(0.08),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: SifaBrand.gold.withOpacity(0.45),
+                            ),
                           ),
                           alignment: Alignment.center,
-                          child: const SifaBuildingMark(size: 32),
+                          child: const SifaBuildingMark(size: 33),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -297,24 +300,28 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             children: [
                               Text(
                                 customer.name,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                                 style: Theme.of(context)
                                     .textTheme
                                     .headlineSmall
-                                    ?.copyWith(fontWeight: FontWeight.w900),
+                                    ?.copyWith(
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
                               ),
                               const SizedBox(height: 4),
-                              Text(
+                              const Text(
                                 'Müşteri genel görünümü',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color: SifaBrand.textGrey,
-                                    ),
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 8),
                         StatusPill(
                           label: activeRentalCount > 0 ? 'Aktif' : 'Pasif',
                           tone: activeRentalCount > 0
@@ -324,58 +331,91 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 18),
-                    Row(
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                    child: Column(
                       children: [
-                        Expanded(
-                          child: _CustomerMetric(
-                            label: 'Aktif Kiralama',
-                            value: '$activeRentalCount',
-                          ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _CustomerMetric(
+                                label: 'Aktif Kiralama',
+                                value: '$activeRentalCount',
+                                icon: Icons.event_repeat_outlined,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _CustomerMetric(
+                                label: 'Kiradaki Kalem',
+                                value: '$activeItemCount',
+                                icon: Icons.inventory_2_outlined,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _CustomerMetric(
+                                label: 'Toplam Kalan',
+                                value: _number(totalRemaining),
+                                icon: Icons.warehouse_outlined,
+                                emphasize: true,
+                              ),
+                            ),
+                          ],
                         ),
-                        Expanded(
-                          child: _CustomerMetric(
-                            label: 'Kiradaki Kalem',
-                            value: '$activeItemCount',
-                          ),
-                        ),
-                        Expanded(
-                          child: _CustomerMetric(
-                            label: 'Toplam Kalan',
-                            value: _number(totalRemaining),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (isAdmin) ...[
-                      const Divider(height: 26),
-                      Row(
-                        children: [
-                          const Icon(Icons.account_balance_wallet_outlined),
-                          const SizedBox(width: 8),
-                          const Expanded(
-                            child: Text(
-                              'Açık Hesap',
-                              style: TextStyle(fontWeight: FontWeight.w800),
+                        if (isAdmin) ...[
+                          const SizedBox(height: 14),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 13,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: openBalance > 0
+                                  ? const Color(0xFFFFF4E5)
+                                  : SifaBrand.ivory,
+                              borderRadius: BorderRadius.circular(13),
+                              border: Border.all(
+                                color: openBalance > 0
+                                    ? const Color(0xFFF1D8AF)
+                                    : SifaBrand.softGrey,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.account_balance_wallet_outlined,
+                                  color: SifaBrand.deepGold,
+                                ),
+                                const SizedBox(width: 9),
+                                const Expanded(
+                                  child: Text(
+                                    'Açık Hesap',
+                                    style:
+                                        TextStyle(fontWeight: FontWeight.w800),
+                                  ),
+                                ),
+                                Text(
+                                  '${_money(openBalance)} ₺',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .titleLarge
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w900,
+                                        color: openBalance > 0
+                                            ? const Color(0xFF9A5D00)
+                                            : SifaBrand.charcoal,
+                                      ),
+                                ),
+                              ],
                             ),
                           ),
-                          Text(
-                            '${_money(openBalance)} ₺',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleLarge
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w900,
-                                  color: openBalance > 0
-                                      ? Theme.of(context).colorScheme.error
-                                      : null,
-                                ),
-                          ),
                         ],
-                      ),
-                    ],
-                  ],
-                ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             if (loading) ...[
@@ -607,31 +647,57 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
 class _CustomerMetric extends StatelessWidget {
   final String label;
   final String value;
+  final IconData icon;
+  final bool emphasize;
 
   const _CustomerMetric({
     required this.label,
     required this.value,
+    required this.icon,
+    this.emphasize = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 11),
+      decoration: BoxDecoration(
+        color: emphasize ? SifaBrand.goldBg : SifaBrand.ivory,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: emphasize
+              ? SifaBrand.gold.withOpacity(0.35)
+              : SifaBrand.softGrey,
         ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-        ),
-      ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            icon,
+            size: 18,
+            color: emphasize ? SifaBrand.deepGold : SifaBrand.textGrey,
+          ),
+          const SizedBox(height: 7),
+          Text(
+            value,
+            maxLines: 1,
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w900,
+                  color: SifaBrand.charcoal,
+                ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 2,
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: SifaBrand.textGrey,
+                  fontWeight: FontWeight.w700,
+                ),
+          ),
+        ],
+      ),
     );
   }
 }
