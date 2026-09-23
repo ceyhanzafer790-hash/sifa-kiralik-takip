@@ -431,14 +431,14 @@ class _MorePage extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
       children: [
         Text(
-          'Daha Fazla',
+          'Diğer',
           style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w900,
               ),
         ),
         const SizedBox(height: 4),
         Text(
-          'Günlük akışın dışında kalan araçlar burada.',
+          'Ayarlar, stok araçları ve yönetim işlemleri.',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
@@ -490,12 +490,6 @@ class _MorePage extends StatelessWidget {
                 title: 'Senkron Çakışmaları',
                 trailing: '${syncStatus.conflicts}',
                 onTap: () => onOpen(const ConflictResolutionScreen()),
-              ),
-            if (role != AppRole.viewer)
-              _MenuTile(
-                icon: Icons.assessment_outlined,
-                title: 'Raporlar',
-                onTap: () => onOpen(const ReportsScreen()),
               ),
             _MenuTile(
               icon: Icons.search,
