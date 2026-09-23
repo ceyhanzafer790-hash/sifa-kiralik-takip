@@ -467,27 +467,9 @@ class _MorePage extends StatelessWidget {
           children: [
             _MenuTile(
               icon: Icons.inventory_2_outlined,
-              title: 'Malzemeler',
+              title: 'Malzemeler & Stok',
               onTap: () => onOpen(const MaterialsScreen()),
             ),
-            if (canWrite)
-              _MenuTile(
-                icon: Icons.fact_check_outlined,
-                title: 'Stok Sayımı',
-                onTap: () => onOpen(const StockCountScreen()),
-              ),
-            if (canWrite)
-              _MenuTile(
-                icon: Icons.warehouse_outlined,
-                title: 'Stok Bakımı',
-                onTap: () => onOpen(const StockMaintenanceScreen()),
-              ),
-            if (canWrite)
-              _MenuTile(
-                icon: Icons.add_box_outlined,
-                title: 'Stok Girişi',
-                onTap: () => onOpen(const StockSourceScreen()),
-              ),
           ],
         ),
         const SizedBox(height: 16),
