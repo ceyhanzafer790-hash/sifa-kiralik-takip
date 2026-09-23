@@ -124,31 +124,12 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
       return;
     }
 
-    final next = <String, Map<String, dynamic>>{};
-    var hadError = false;
-
-    for (var i = 0; i < products.length; i += 6) {
-      final end =
-          i + 6 < products.length ? i + 6 : products.length;
-      final batch = products.sublist(i, end);
-
-      final results = await Future.wait(
-        batch.map((product) async {
-          try {
-            final summary = await stockRepo.productSummary(product.id);
-            return MapEntry(product.id, summary);
-          } catch (_) {
-            hadError = true;
-            return null;
-          }
-        }),
-      );
-
-      for (final result in results) {
-        if (result != null) {
-          next[result.key] = result.value;
-        }
-      }
+    try {
+      final rows = await stockRepo.allSummaries();
+      final next = <String, Map<String, dynamic>>{
+        for (final row in rows)
+          row['product_id'].toString(): row,
+      };
 
       if (mounted) {
         setState(() {
@@ -157,14 +138,14 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
             ..addAll(next);
         });
       }
-    }
-
-    if (mounted && hadError) {
-      setState(() {
-        stockError = next.isEmpty
-            ? 'Stok özetleri alınamadı.'
-            : 'Bazı stok özetleri alınamadı. Görünen değerler son alınabilen verilerdir.';
-      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          stockError = summaries.isEmpty
+              ? 'Stok özetleri alınamadı.'
+              : 'Stok özeti yenilenemedi. Son alınan değerler gösteriliyor.';
+        });
+      }
     }
   }
 
