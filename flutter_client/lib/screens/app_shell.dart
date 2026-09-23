@@ -7,6 +7,7 @@ import '../services/app_status_service.dart';
 import '../services/app_version.dart';
 import '../services/auto_sync_coordinator.dart';
 import '../services/role_service.dart';
+import '../widgets/sifa_wordmark.dart';
 import 'admin_hub_screen.dart';
 import 'conflict_resolution_screen.dart';
 import 'customer_list_screen.dart';
@@ -187,9 +188,9 @@ class _AppShellState extends State<AppShell> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'Şifa Kiralık Takip',
-          style: TextStyle(fontWeight: FontWeight.w900),
+        title: const SifaWordmark(
+          compact: true,
+          showSubtitle: true,
         ),
         actions: [
           IconButton(
