@@ -3,6 +3,7 @@ import 'package:uuid/uuid.dart';
 
 import '../data/seed_products.dart';
 import '../models/models.dart';
+import '../services/api_client.dart';
 import '../services/api_config.dart';
 import '../services/offline_sync_service.dart';
 import '../services/role_service.dart';
@@ -108,8 +109,13 @@ class _SalesScreenState extends State<SalesScreen> {
           }
           await _load();
           return;
+        } on ApiException catch (e) {
+          if (mounted) {
+            _message(e.userMessage);
+          }
+          return;
         } catch (_) {
-          // Ağ yoksa kalıcı offline kuyruğa geçer.
+          // Gerçek bağlantı problemi varsa kalıcı offline kuyruğa geçer.
         }
       }
 
