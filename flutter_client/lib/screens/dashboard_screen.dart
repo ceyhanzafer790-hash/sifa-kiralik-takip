@@ -387,11 +387,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
                       child: ListTile(
-                        leading: CircleAvatar(
+                        leading: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: invoiceRequired && !invoiceIssued
+                                ? SifaBrand.goldBg
+                                : SifaBrand.ivory,
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(
+                              color: invoiceRequired && !invoiceIssued
+                                  ? SifaBrand.gold.withOpacity(0.35)
+                                  : SifaBrand.softGrey,
+                            ),
+                          ),
+                          alignment: Alignment.center,
                           child: Icon(
                             invoiceRequired && !invoiceIssued
                                 ? Icons.receipt_long_outlined
                                 : Icons.event_repeat_outlined,
+                            color: invoiceRequired && !invoiceIssued
+                                ? SifaBrand.deepGold
+                                : SifaBrand.textGrey,
+                            size: 20,
                           ),
                         ),
                         title: Text(
@@ -551,7 +569,20 @@ class _FinancialCard extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(child: Icon(icon)),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: SifaBrand.gold.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: SifaBrand.deepGold,
+                  size: 21,
+                ),
+              ),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -574,7 +605,10 @@ class _FinancialCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.chevron_right),
+              const Icon(
+                Icons.chevron_right,
+                color: SifaBrand.deepGold,
+              ),
             ],
           ),
         ),
