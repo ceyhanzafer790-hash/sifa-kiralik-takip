@@ -340,7 +340,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
 
                     return Card(
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(18),
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
@@ -352,7 +352,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                           await _loadActivity(customers);
                         },
                         child: Padding(
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(16),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -360,10 +360,22 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
                                 width: 46,
                                 height: 46,
                                 decoration: BoxDecoration(
-                                  color: SifaBrand.ivory,
-                                  borderRadius: BorderRadius.circular(12),
+                                  color: activity.latestOutboundDate != null &&
+                                          DateTime.now()
+                                                  .difference(activity.latestOutboundDate!)
+                                                  .inDays <=
+                                              7
+                                      ? SifaBrand.goldBg
+                                      : SifaBrand.ivory,
+                                  borderRadius: BorderRadius.circular(13),
                                   border: Border.all(
-                                    color: SifaBrand.softGrey,
+                                    color: activity.latestOutboundDate != null &&
+                                            DateTime.now()
+                                                    .difference(activity.latestOutboundDate!)
+                                                    .inDays <=
+                                                7
+                                        ? SifaBrand.gold.withOpacity(0.35)
+                                        : SifaBrand.softGrey,
                                   ),
                                 ),
                                 alignment: Alignment.center,
