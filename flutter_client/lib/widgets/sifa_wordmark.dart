@@ -5,16 +5,19 @@ import 'sifa_brand.dart';
 class SifaWordmark extends StatelessWidget {
   final bool compact;
   final bool showSubtitle;
+  final bool light;
 
   const SifaWordmark({
     super.key,
     this.compact = false,
     this.showSubtitle = true,
+    this.light = false,
   });
 
   @override
   Widget build(BuildContext context) {
     final height = compact ? 29.0 : 44.0;
+    final foreground = light ? Colors.white : SifaBrand.charcoal;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -29,7 +32,7 @@ class SifaWordmark extends StatelessWidget {
               Text(
                 'S',
                 style: TextStyle(
-                  color: SifaBrand.charcoal,
+                  color: foreground,
                   fontWeight: FontWeight.w900,
                   fontSize: compact ? 28 : 42,
                   height: 0.9,
@@ -44,6 +47,7 @@ class SifaWordmark extends StatelessWidget {
                 child: _PillarMark(
                   width: compact ? 9 : 13,
                   height: compact ? 28 : 42,
+                  foreground: foreground,
                 ),
               ),
               Stack(
@@ -52,7 +56,7 @@ class SifaWordmark extends StatelessWidget {
                   Text(
                     'FA',
                     style: TextStyle(
-                      color: SifaBrand.charcoal,
+                      color: foreground,
                       fontWeight: FontWeight.w900,
                       fontSize: compact ? 28 : 42,
                       height: 0.9,
@@ -126,10 +130,12 @@ class SifaWordmark extends StatelessWidget {
 class _PillarMark extends StatelessWidget {
   final double width;
   final double height;
+  final Color foreground;
 
   const _PillarMark({
     required this.width,
     required this.height,
+    required this.foreground,
   });
 
   @override
@@ -161,7 +167,7 @@ class _PillarMark extends StatelessWidget {
             child: Container(
               width: width,
               height: height * 0.11,
-              color: SifaBrand.charcoal,
+              color: foreground,
             ),
           ),
           Positioned(
@@ -182,7 +188,7 @@ class _PillarMark extends StatelessWidget {
             child: Container(
               width: width,
               height: height * 0.08,
-              color: SifaBrand.charcoal,
+              color: foreground,
             ),
           ),
         ],
