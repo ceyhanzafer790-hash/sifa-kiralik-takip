@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../services/offline_document_queue.dart';
 import '../services/rental_api_repository.dart';
@@ -331,6 +332,161 @@ class _RentalTrackingDetailScreenState
     }
   }
 
+
+  Future<void> _shareWhatsApp() async {
+    final current = detail;
+    if (current == null) return;
+
+    final rental =
+        Map<String, dynamic>.from(current['rental'] as Map);
+    final items = ((current['items'] as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final rates = ((current['rates'] as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+    final billing = ((current['billing_periods'] as List?) ?? const [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+
+    final buffer = StringBuffer()
+      ..writeln('ŞİFA İNŞAAT')
+      ..writeln('Kiralama Hesap Özeti')
+      ..writeln()
+      ..writeln(
+        'Müşteri: ${rental['customer_name']?.toString() ?? 'Müşteri'}',
+      );
+
+    if (rental['address_label'] != null) {
+      buffer.writeln('Şantiye: ${rental['address_label']}');
+    }
+
+    final original = DateTime.tryParse(
+      rental['original_outbound_date']?.toString() ?? '',
+    );
+    if (original != null) {
+      buffer.writeln('Başlangıç: ${trDate(original)}');
+    }
+
+    buffer.writeln();
+
+    for (final item in items) {
+      final initial =
+          (item['initial_quantity'] as num?)?.toDouble() ?? 0;
+      final returned =
+          (item['returned_quantity'] as num?)?.toDouble() ?? 0;
+      final remaining =
+          (initial - returned).clamp(0.0, double.infinity).toDouble();
+
+      final itemRates = rates
+          .where(
+            (r) =>
+                r['rental_item_id'].toString() ==
+                item['id'].toString(),
+          )
+          .toList()
+        ..sort(
+          (a, b) => DateTime.parse(
+            b['effective_from'].toString(),
+          ).compareTo(
+            DateTime.parse(a['effective_from'].toString()),
+          ),
+        );
+
+      buffer
+        ..writeln(item['product_name']?.toString() ?? 'Malzeme')
+        ..writeln(
+          'Gönderilen: ${_n(initial)} ${_unit(item['unit'])}',
+        )
+        ..writeln(
+          'İade: ${_n(returned)} ${_unit(item['unit'])}',
+        )
+        ..writeln(
+          'Müşteride: ${_n(remaining)} ${_unit(item['unit'])}',
+        );
+
+      if (itemRates.isNotEmpty) {
+        final rate = itemRates.first;
+        final rateLabel = rate['rate_type'] == 'fixed_monthly'
+            ? 'sabit aylık'
+            : 'birim başına aylık';
+        buffer.writeln(
+          'Güncel fiyat: ${rate['amount']} ₺ ($rateLabel)',
+        );
+      }
+
+      buffer.writeln();
+    }
+
+    final billed = billing.fold<double>(
+      0,
+      (sum, row) =>
+          sum + ((row['billed_amount'] as num?)?.toDouble() ?? 0),
+    );
+    final paid = billing.fold<double>(
+      0,
+      (sum, row) =>
+          sum + ((row['paid_amount'] as num?)?.toDouble() ?? 0),
+    );
+    final balance = (billed - paid).clamp(0.0, double.infinity);
+
+    if (billed > 0 || paid > 0) {
+      buffer
+        ..writeln('Hesap Durumu')
+        ..writeln('Faturalandırılmış: ${_money(billed)} ₺')
+        ..writeln('Tahsil Edilen: ${_money(paid)} ₺')
+        ..writeln('Kalan: ${_money(balance.toDouble())} ₺')
+        ..writeln();
+    }
+
+    buffer.writeln('Şifa İnşaat Kiralık Takip');
+
+    final summary = buffer.toString().trim();
+    final native = Uri.parse(
+      'whatsapp://send?text=${Uri.encodeComponent(summary)}',
+    );
+
+    var opened = false;
+    if (await canLaunchUrl(native)) {
+      opened = await launchUrl(
+        native,
+        mode: LaunchMode.externalApplication,
+      );
+    }
+
+    if (!opened) {
+      final web = Uri.https('wa.me', '/', {'text': summary});
+      opened = await launchUrl(
+        web,
+        mode: LaunchMode.externalApplication,
+      );
+    }
+
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('WhatsApp açılamadı.'),
+        ),
+      );
+    }
+  }
+
+  String _money(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final reversed = parts[0].split('').reversed.toList();
+    final groups = <String>[];
+
+    for (var i = 0; i < reversed.length; i += 3) {
+      groups.add(
+        reversed.skip(i).take(3).toList().reversed.join(),
+      );
+    }
+
+    final whole = groups.reversed.join('.');
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     if (loading && detail == null) {
@@ -428,6 +584,15 @@ class _RentalTrackingDetailScreenState
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 10),
+            FilledButton.icon(
+              onPressed: _shareWhatsApp,
+              icon: const Icon(Icons.chat_outlined),
+              label: const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('WHATSAPP\'TAN HESAP ÖZETİ'),
               ),
             ),
             const SizedBox(height: 16),
