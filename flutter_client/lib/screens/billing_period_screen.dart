@@ -100,13 +100,19 @@ class _BillingPeriodScreenState
                 controller: invoiceNoController,
                 decoration: const InputDecoration(
                   labelText: 'Fatura no',
-                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(
+                    Icons.receipt_long_outlined,
+                    color: SifaBrand.deepGold,
+                  ),
                 ),
               ),
               const SizedBox(height: 10),
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.receipt_outlined),
+                leading: const Icon(
+                  Icons.receipt_outlined,
+                  color: SifaBrand.deepGold,
+                ),
                 title: const Text('Fatura tarihi'),
                 subtitle: Text(_date(invoiceDate)),
                 trailing: IconButton(
