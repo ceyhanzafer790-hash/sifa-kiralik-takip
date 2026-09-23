@@ -200,12 +200,15 @@ class _RentalCreateScreenState extends State<RentalCreateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final selectedAddress = addressId == null
-        ? null
-        : addresses.cast<Map<String, dynamic>?>().firstWhere(
-              (a) => a?['id'].toString() == addressId,
-              orElse: () => null,
-            );
+    Map<String, dynamic>? selectedAddress;
+    for (final address in addresses) {
+      if (address['id'].toString() == addressId) {
+        selectedAddress = address;
+        break;
+      }
+    }
+    final fullAddress =
+        selectedAddress?['full_address']?.toString().trim();
     final pricedCount = lines.where((line) => line.rate != null).length;
 
     return Scaffold(
@@ -282,30 +285,32 @@ class _RentalCreateScreenState extends State<RentalCreateScreen> {
                     ],
                   ),
                 ),
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(14, 13, 14, 14),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
                   child: Row(
                     children: [
-                      Expanded(
+                      const Expanded(
                         child: _StepPill(
                           number: '1',
                           label: 'Müşteri',
                           done: true,
                         ),
                       ),
-                      SizedBox(width: 7),
+                      const SizedBox(width: 7),
                       Expanded(
                         child: _StepPill(
                           number: '2',
                           label: 'Şantiye',
-                          active: true,
+                          active: lines.isEmpty,
+                          done: lines.isNotEmpty,
                         ),
                       ),
-                      SizedBox(width: 7),
+                      const SizedBox(width: 7),
                       Expanded(
                         child: _StepPill(
                           number: '3',
                           label: 'Malzeme',
+                          active: lines.isNotEmpty,
                         ),
                       ),
                     ],
@@ -359,13 +364,12 @@ class _RentalCreateScreenState extends State<RentalCreateScreen> {
                   const SizedBox(height: 8),
                   const LinearProgressIndicator(minHeight: 2),
                 ],
-                if (selectedAddress?['full_address'] != null &&
-                    selectedAddress!['full_address'].toString().trim().isNotEmpty) ...[
+                if (fullAddress != null && fullAddress.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Align(
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      selectedAddress['full_address'].toString(),
+                      fullAddress,
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: SifaBrand.textGrey,
                           ),
