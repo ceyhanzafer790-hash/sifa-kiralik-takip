@@ -154,20 +154,48 @@ class _ReportsScreenState extends State<ReportsScreen> {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
         children: [
-          Text(
-            'Raporlar',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.w900,
-                ),
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Container(
+              width: double.infinity,
+              color: SifaBrand.charcoal,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.bar_chart_outlined,
+                    color: SifaBrand.gold,
+                    size: 28,
+                  ),
+                  SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Rapor Merkezi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                          ),
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'Kiralama, satış, stok ve finans raporlarını dışa aktar.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            'Kiralama, stok ve finans raporlarını tek yerden hazırla.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: SifaBrand.textGrey,
-                ),
-          ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
@@ -200,10 +228,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    filterText.isEmpty
-                        ? 'Tüm kayıtlar'
-                        : filterText,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: SifaBrand.ivory,
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(color: SifaBrand.softGrey),
+                    ),
+                    child: Text(
+                      filterText.isEmpty
+                          ? 'Tüm kayıtlar'
+                          : filterText,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -259,6 +302,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
             onCsv: () => _download('stock', 'csv'),
             xlsxBusy: busy == 'stock:xlsx',
             csvBusy: busy == 'stock:csv',
+          ),
+          _ReportCard(
+            title: 'Satışlar',
+            subtitle:
+                'Müşteri, satış tarihi, malzeme, miktar, birim fiyat ve toplam.',
+            icon: Icons.sell_outlined,
+            onXlsx: () => _download('sales', 'xlsx'),
+            onCsv: () => _download('sales', 'csv'),
+            xlsxBusy: busy == 'sales:xlsx',
+            csvBusy: busy == 'sales:csv',
           ),
           if (isAdmin)
             _ReportCard(
