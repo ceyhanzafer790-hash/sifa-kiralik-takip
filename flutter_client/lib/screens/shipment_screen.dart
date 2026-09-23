@@ -7,6 +7,7 @@ import '../services/local_domain_cache.dart';
 import '../widgets/sifa_brand.dart';
 import 'customer_create_screen.dart';
 import 'rental_create_screen.dart';
+import 'rental_tracking_detail_screen.dart';
 
 class ShipmentScreen extends StatefulWidget {
   const ShipmentScreen({super.key});
@@ -93,11 +94,24 @@ class _ShipmentScreenState extends State<ShipmentScreen> {
   }
 
   Future<void> _startRental(Customer customer) async {
-    await Navigator.of(context).push<String>(
+    final rentalId = await Navigator.of(context).push<String>(
       MaterialPageRoute(
         builder: (_) => RentalCreateScreen(customer: customer),
       ),
     );
+
+    if (!mounted) return;
+
+    if (rentalId != null) {
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => RentalTrackingDetailScreen(
+            recordId: rentalId,
+          ),
+        ),
+      );
+    }
+
     await _load();
   }
 
