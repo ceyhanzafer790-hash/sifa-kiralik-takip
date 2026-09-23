@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import '../services/dashboard_api_repository.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
+import '../services/stock_api_repository.dart';
 import '../widgets/sifa_brand.dart';
 import 'global_search_screen.dart';
+import 'materials_screen.dart';
 import 'customer_list_screen.dart';
 import 'overdue_receivables_screen.dart';
 import 'receivables_screen.dart';
@@ -24,8 +26,10 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final repo = DashboardApiRepository();
   final roles = RoleService();
+  final stockRepo = StockApiRepository();
 
   Map<String, dynamic>? data;
+  int? stockAttentionCount;
   bool canSeeFinancials = false;
   String? error;
   bool loading = true;
@@ -51,10 +55,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         roles.canSeeFinancials(),
       ]);
 
+      int? nextStockAttention;
+      try {
+        final rows = await stockRepo.allSummaries();
+        nextStockAttention = rows.where((row) {
+          return _double(row['repair']) > 0 ||
+              _double(row['scrap']) > 0 ||
+              _double(row['lost']) > 0;
+        }).length;
+      } catch (_) {
+        nextStockAttention = null;
+      }
+
       if (mounted) {
         setState(() {
           data = result[0] as Map<String, dynamic>;
           canSeeFinancials = result[1] as bool;
+          stockAttentionCount = nextStockAttention;
         });
       }
     } catch (e) {
@@ -207,6 +224,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: Icons.arrow_forward_rounded,
                   onTap: () => _open(const RentalsOverviewScreen()),
                 ),
+                if (stockAttentionCount != null)
+                  _MetricCard(
+                    width: cardWidth,
+                    title: 'Stok Uyarısı',
+                    value: stockAttentionCount.toString(),
+                    subtitle: stockAttentionCount == 0
+                        ? 'Sorunlu stok görünmüyor'
+                        : 'Tamirlik / hurda / kayıp',
+                    icon: stockAttentionCount == 0
+                        ? Icons.verified_outlined
+                        : Icons.build_circle_outlined,
+                    onTap: () => _open(const MaterialsScreen()),
+                  ),
               ],
             ),
             const SizedBox(height: 22),
