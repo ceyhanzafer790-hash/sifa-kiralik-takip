@@ -3,7 +3,7 @@ name: PWA Build
 on:
   workflow_dispatch:
   push:
-    branches: [ main, pwa-v0.24, pwa-web-compat-fix ]
+    branches: [ main, v0.25-redesign, pwa-v0.24, pwa-web-compat-fix ]
     paths:
       - 'flutter_client/**'
       - 'scripts/prepare_pwa.py'
@@ -64,7 +64,7 @@ jobs:
       - name: PWA paketini yayınla
         uses: actions/upload-artifact@v4
         with:
-          name: sifa-kiralik-takip-v0.24-pwa
+          name: sifa-kiralik-takip-v0.25-pwa
           path: flutter_client/build/web
           if-no-files-found: error
           retention-days: 30
