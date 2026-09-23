@@ -19,7 +19,7 @@ class RentalAccountSummaryService {
 
     final buffer = StringBuffer()
       ..writeln('ŞİFA İNŞAAT')
-      ..writeln('Kiralama Hesap Özeti')
+      ..writeln('MÜŞTERİ ÖZETİ')
       ..writeln()
       ..writeln('Müşteri: ${rental['customer_name'] ?? 'Müşteri'}');
 
@@ -71,7 +71,7 @@ class RentalAccountSummaryService {
         ..writeln();
     }
 
-    buffer.writeln('Şifa İnşaat Kiralık Takip');
+    buffer.writeln('ŞİFA İnşaat • Güçlü Yapılar, Güvenilir Ortaklıklar.');
     return buffer.toString().trim();
   }
 
@@ -112,10 +112,10 @@ class RentalAccountSummaryService {
       rental['original_outbound_date']?.toString() ?? '',
     );
 
-    final navy = PdfColor.fromHex('#24324A');
-    final warm = PdfColor.fromHex('#B08A57');
-    final soft = PdfColor.fromHex('#F4F1EB');
-    final border = PdfColor.fromHex('#E2E2DE');
+    final navy = PdfColor.fromHex('#111111');
+    final warm = PdfColor.fromHex('#D4AF37');
+    final soft = PdfColor.fromHex('#FAFAF8');
+    final border = PdfColor.fromHex('#E5E5E5');
 
     final rows = <List<String>>[];
     for (final item in items) {
@@ -170,7 +170,7 @@ class RentalAccountSummaryService {
                       ),
                     ),
                     pw.Text(
-                      'INSAAT  /  KIRALIK TAKIP',
+                      'INSAAT  •  KIRALIK TAKIP',
                       style: pw.TextStyle(
                         color: warm,
                         fontSize: 8,
@@ -181,7 +181,7 @@ class RentalAccountSummaryService {
                 ),
               ),
               pw.Text(
-                'Kiralama Hesap Ozeti',
+                'MUSTERI EKSTRESI',
                 style: pw.TextStyle(
                   color: navy,
                   fontSize: 12,
@@ -195,7 +195,7 @@ class RentalAccountSummaryService {
           mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
           children: [
             pw.Text(
-              'Sifa Insaat Kiralik Takip',
+              'Sifa Insaat  •  Guclu Yapilar, Guvenilir Ortakliklar.',
               style: pw.TextStyle(fontSize: 8, color: PdfColors.grey600),
             ),
             pw.Text(
