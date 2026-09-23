@@ -900,6 +900,26 @@ class _RentalTrackingDetailScreenState
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Hesap & Ödemeler',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              StatusPill(
+                label: '${billing.length} dönem',
+                tone: totals.balance > 0
+                    ? AppStatusTone.warning
+                    : AppStatusTone.neutral,
+                compact: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -1012,6 +1032,33 @@ class _RentalTrackingDetailScreenState
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 18, 16, 100),
         children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Belgeler',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
+                ),
+              ),
+              StatusPill(
+                label: '${docs.length} belge',
+                tone: docs.isEmpty
+                    ? AppStatusTone.neutral
+                    : AppStatusTone.success,
+                compact: true,
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Kira sözleşmesi ile giden ve gelen sevkiyat evraklarını burada tut.',
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: SifaBrand.textGrey,
+                ),
+          ),
+          const SizedBox(height: 12),
           if (canWrite)
             Wrap(
               spacing: 8,
@@ -1056,8 +1103,13 @@ class _RentalTrackingDetailScreenState
                         borderRadius: BorderRadius.circular(12),
                       ),
                       alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.attach_file,
+                      child: Icon(
+                        switch (doc['document_type']?.toString()) {
+                          'contract' => Icons.description_outlined,
+                          'outbound_delivery' => Icons.north_east,
+                          'inbound_delivery' => Icons.south_west,
+                          _ => Icons.attach_file,
+                        },
                         color: SifaBrand.deepGold,
                         size: 21,
                       ),
