@@ -8,6 +8,7 @@ import '../services/app_version.dart';
 import '../services/auto_sync_coordinator.dart';
 import '../services/role_service.dart';
 import '../widgets/sifa_wordmark.dart';
+import '../widgets/sifa_brand.dart';
 import 'admin_hub_screen.dart';
 import 'conflict_resolution_screen.dart';
 import 'customer_list_screen.dart';
@@ -577,7 +578,20 @@ class _QuickActionTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
-        leading: Icon(icon),
+        leading: Container(
+        width: 38,
+        height: 38,
+        decoration: BoxDecoration(
+          color: SifaBrand.gold.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 20,
+          color: SifaBrand.deepGold,
+        ),
+      ),
         title: Text(
           title,
           style: const TextStyle(fontWeight: FontWeight.w800),
