@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/admin_api_repository.dart';
+import '../widgets/sifa_brand.dart';
+import '../widgets/status_pill.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -11,8 +13,10 @@ class AdminUsersScreen extends StatefulWidget {
 
 class _AdminUsersScreenState extends State<AdminUsersScreen> {
   final repo = AdminApiRepository();
+
   List<Map<String, dynamic>> users = [];
   bool loading = true;
+  bool busy = false;
   String? error;
 
   @override
@@ -37,6 +41,19 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     }
   }
 
+  Future<void> _run(Future<void> Function() action) async {
+    if (busy) return;
+
+    setState(() => busy = true);
+    try {
+      await action();
+    } catch (e) {
+      _message('İşlem tamamlanamadı: $e');
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   Future<void> _create() async {
     final result = await showDialog<_NewUser>(
       context: context,
@@ -44,13 +61,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
     if (result == null) return;
 
-    await repo.createUser(
-      email: result.email,
-      password: result.password,
-      fullName: result.fullName,
-      role: result.role,
-    );
-    await _load();
+    await _run(() async {
+      await repo.createUser(
+        email: result.email,
+        password: result.password,
+        fullName: result.fullName,
+        role: result.role,
+      );
+      _message('Kullanıcı oluşturuldu.');
+      await _load();
+    });
   }
 
   Future<void> _changeRole(Map<String, dynamic> user) async {
@@ -59,25 +79,81 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final role = await showDialog<String>(
       context: context,
       builder: (context) => SimpleDialog(
-        title: const Text('Kullanıcı rolü'),
+        title: const Text('Kullanıcı Rolü'),
         children: [
-          for (final r in ['admin', 'staff', 'viewer'])
+          for (final value in ['admin', 'staff', 'viewer'])
             ListTile(
               leading: Icon(
-                current == r
+                current == value
                     ? Icons.radio_button_checked
                     : Icons.radio_button_off,
+                color: current == value
+                    ? SifaBrand.deepGold
+                    : SifaBrand.textGrey,
               ),
-              title: Text(_roleLabel(r)),
-              onTap: () => Navigator.pop(context, r),
+              title: Text(
+                _roleLabel(value),
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              onTap: () => Navigator.pop(context, value),
             ),
         ],
       ),
     );
 
     if (role == null || role == current) return;
-    await repo.setRole(user['id'].toString(), role);
-    await _load();
+
+    await _run(() async {
+      await repo.setRole(user['id'].toString(), role);
+      _message('Kullanıcı rolü güncellendi.');
+      await _load();
+    });
+  }
+
+  Future<void> _toggleActive(Map<String, dynamic> user) async {
+    final currentlyActive = user['active'] == true;
+    final targetActive = !currentlyActive;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          targetActive ? 'Hesabı Aktif Et' : 'Hesabı Pasif Yap',
+        ),
+        content: Text(
+          targetActive
+              ? 'Bu kullanıcı yeniden sisteme giriş yapabilecek.'
+              : 'Bu kullanıcı pasifken sisteme giriş yapamayacak.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Vazgeç'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(
+              targetActive ? 'Aktif Et' : 'Pasif Yap',
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true) return;
+
+    await _run(() async {
+      await repo.setActive(
+        user['id'].toString(),
+        targetActive,
+      );
+      _message(
+        targetActive
+            ? 'Kullanıcı hesabı aktif edildi.'
+            : 'Kullanıcı hesabı pasif yapıldı.',
+      );
+      await _load();
+    });
   }
 
   Future<void> _resetPassword(Map<String, dynamic> user) async {
@@ -86,13 +162,20 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     final password = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('${user['full_name']} • Şifre Yenile'),
+        title: Text(
+          '${user['full_name'] ?? 'Kullanıcı'} • Şifre Yenile',
+        ),
         content: TextField(
           controller: controller,
           obscureText: true,
+          autofocus: true,
           decoration: const InputDecoration(
-            labelText: 'Yeni şifre, en az 8 karakter',
-            border: OutlineInputBorder(),
+            labelText: 'Yeni şifre',
+            hintText: 'En az 8 karakter',
+            prefixIcon: Icon(
+              Icons.lock_reset_outlined,
+              color: SifaBrand.deepGold,
+            ),
           ),
         ),
         actions: [
@@ -102,9 +185,15 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           ),
           FilledButton(
             onPressed: () {
-              if (controller.text.length >= 8) {
-                Navigator.pop(context, controller.text);
+              if (controller.text.length < 8) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Şifre en az 8 karakter olmalı.'),
+                  ),
+                );
+                return;
               }
+              Navigator.pop(context, controller.text);
             },
             child: const Text('Şifreyi Değiştir'),
           ),
@@ -113,103 +202,292 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     );
 
     controller.dispose();
-
     if (password == null) return;
-    await repo.resetPassword(user['id'].toString(), password);
 
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Kullanıcı şifresi yenilendi.')),
-      );
-    }
+    await _run(() async {
+      await repo.resetPassword(user['id'].toString(), password);
+      _message('Kullanıcı şifresi yenilendi.');
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final activeCount =
+        users.where((user) => user['active'] == true).length;
+    final adminCount = users
+        .where((user) => user['role']?.toString() == 'admin')
+        .length;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Kullanıcı Yönetimi')),
+      appBar: AppBar(
+        title: const Text(
+          'Kullanıcı Yönetimi',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
+      ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _create,
+        onPressed: busy ? null : _create,
         icon: const Icon(Icons.person_add_alt_1),
         label: const Text('Kullanıcı Ekle'),
       ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
-          padding: const EdgeInsets.all(16),
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 110),
           children: [
-            if (loading) const LinearProgressIndicator(),
-            if (error != null)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(error!),
-                ),
-              ),
-            ...users.map(
-              (user) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      child: Text(
-                        (user['full_name']?.toString().isNotEmpty == true)
-                            ? user['full_name'].toString()[0].toUpperCase()
-                            : '?',
-                      ),
-                    ),
-                    title: Text(
-                      user['full_name']?.toString() ?? '',
-                      style: const TextStyle(fontWeight: FontWeight.w800),
-                    ),
-                    subtitle: Text(
-                      '${user['email']} • ${_roleLabel(user['role']?.toString() ?? '')}',
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (action) async {
-                        if (action == 'role') {
-                          await _changeRole(user);
-                        } else if (action == 'toggle') {
-                          await repo.setActive(
-                            user['id'].toString(),
-                            !(user['active'] == true),
-                          );
-                          await _load();
-                        } else if (action == 'password') {
-                          await _resetPassword(user);
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(
-                          value: 'role',
-                          child: Text('Rolü Değiştir'),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: SifaBrand.charcoal,
+                    padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.manage_accounts_outlined,
+                          color: SifaBrand.gold,
+                          size: 28,
                         ),
-                        PopupMenuItem(
-                          value: 'toggle',
-                          child: Text(
-                            user['active'] == true
-                                ? 'Hesabı Pasif Yap'
-                                : 'Hesabı Aktif Yap',
+                        SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Erişim Yönetimi',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 17,
+                                ),
+                              ),
+                              SizedBox(height: 3),
+                              Text(
+                                'Rolleri, erişimi ve kullanıcı hesaplarını yönet.',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12.5,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        const PopupMenuItem(
-                          value: 'password',
-                          child: Text('Şifreyi Yenile'),
                         ),
                       ],
                     ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _UserMetric(
+                            label: 'Toplam',
+                            value: users.length,
+                            icon: Icons.people_outline,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _UserMetric(
+                            label: 'Aktif',
+                            value: activeCount,
+                            icon: Icons.person_outline,
+                            success: activeCount > 0,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: _UserMetric(
+                            label: 'Yönetici',
+                            value: adminCount,
+                            icon: Icons.admin_panel_settings_outlined,
+                            emphasize: adminCount > 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 80),
+            if (loading || busy) ...[
+              const SizedBox(height: 10),
+              const LinearProgressIndicator(minHeight: 2),
+            ],
+            if (error != null) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(11),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFFFECEC),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  error!,
+                  style: const TextStyle(fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Kullanıcılar',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+                StatusPill(
+                  label: '${users.length} hesap',
+                  tone: AppStatusTone.neutral,
+                  compact: true,
+                ),
+              ],
+            ),
+            const SizedBox(height: 9),
+            if (!loading && users.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(22),
+                  child: Text(
+                    'Kullanıcı kaydı bulunamadı.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontWeight: FontWeight.w900),
+                  ),
+                ),
+              )
+            else
+              ...users.map(
+                (user) {
+                  final active = user['active'] == true;
+                  final role =
+                      user['role']?.toString() ?? 'viewer';
+                  final fullName =
+                      user['full_name']?.toString() ?? 'Kullanıcı';
+                  final initial = fullName.trim().isNotEmpty
+                      ? fullName.trim()[0].toUpperCase()
+                      : '?';
+
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Card(
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        leading: Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: active
+                                ? SifaBrand.goldBg
+                                : SifaBrand.ivory,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: active
+                                  ? SifaBrand.gold.withOpacity(0.35)
+                                  : SifaBrand.softGrey,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            initial,
+                            style: TextStyle(
+                              color: active
+                                  ? SifaBrand.deepGold
+                                  : SifaBrand.textGrey,
+                              fontSize: 17,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                        ),
+                        title: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                fullName,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                            StatusPill(
+                              label: active ? 'Aktif' : 'Pasif',
+                              tone: active
+                                  ? AppStatusTone.success
+                                  : AppStatusTone.neutral,
+                              compact: true,
+                            ),
+                          ],
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            '${user['email'] ?? ''} • ${_roleLabel(role)}',
+                          ),
+                        ),
+                        trailing: PopupMenuButton<String>(
+                          onSelected: (action) async {
+                            if (action == 'role') {
+                              await _changeRole(user);
+                            } else if (action == 'toggle') {
+                              await _toggleActive(user);
+                            } else if (action == 'password') {
+                              await _resetPassword(user);
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'role',
+                              child: Text('Rolü Değiştir'),
+                            ),
+                            PopupMenuItem(
+                              value: 'toggle',
+                              child: Text(
+                                active
+                                    ? 'Hesabı Pasif Yap'
+                                    : 'Hesabı Aktif Yap',
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'password',
+                              child: Text('Şifreyi Yenile'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
           ],
         ),
       ),
     );
   }
 
-  String _roleLabel(String role) => switch (role) {
+  void _message(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message)),
+    );
+  }
+
+  static String _roleLabel(String role) => switch (role) {
         'admin' => 'Yönetici',
         'staff' => 'Personel',
         _ => 'Görüntüleme',
@@ -243,60 +521,64 @@ class _NewUserDialogState extends State<_NewUserDialog> {
       title: const Text('Yeni Kullanıcı'),
       content: SizedBox(
         width: 440,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: fullName,
-              decoration: const InputDecoration(
-                labelText: 'Ad Soyad',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'E-posta',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: password,
-              obscureText: true,
-              decoration: const InputDecoration(
-                labelText: 'Geçici şifre',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 10),
-            DropdownButtonFormField<String>(
-              value: role,
-              decoration: const InputDecoration(
-                labelText: 'Rol',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                DropdownMenuItem(
-                  value: 'admin',
-                  child: Text('Yönetici'),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: fullName,
+                textCapitalization: TextCapitalization.words,
+                decoration: const InputDecoration(
+                  labelText: 'Ad Soyad',
+                  prefixIcon: Icon(Icons.person_outline),
                 ),
-                DropdownMenuItem(
-                  value: 'staff',
-                  child: Text('Personel'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: email,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'E-posta',
+                  prefixIcon: Icon(Icons.email_outlined),
                 ),
-                DropdownMenuItem(
-                  value: 'viewer',
-                  child: Text('Görüntüleme'),
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: password,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  labelText: 'Geçici şifre',
+                  hintText: 'En az 8 karakter',
+                  prefixIcon: Icon(Icons.lock_outline),
                 ),
-              ],
-              onChanged: (value) {
-                if (value != null) setState(() => role = value);
-              },
-            ),
-          ],
+              ),
+              const SizedBox(height: 10),
+              DropdownButtonFormField<String>(
+                value: role,
+                decoration: const InputDecoration(
+                  labelText: 'Rol',
+                  prefixIcon: Icon(Icons.badge_outlined),
+                ),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'admin',
+                    child: Text('Yönetici'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'staff',
+                    child: Text('Personel'),
+                  ),
+                  DropdownMenuItem(
+                    value: 'viewer',
+                    child: Text('Görüntüleme'),
+                  ),
+                ],
+                onChanged: (value) {
+                  if (value != null) setState(() => role = value);
+                },
+              ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -309,6 +591,13 @@ class _NewUserDialogState extends State<_NewUserDialog> {
             if (fullName.text.trim().isEmpty ||
                 email.text.trim().isEmpty ||
                 password.text.length < 8) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Ad soyad, e-posta ve en az 8 karakter şifre gir.',
+                  ),
+                ),
+              );
               return;
             }
 
@@ -325,6 +614,73 @@ class _NewUserDialogState extends State<_NewUserDialog> {
           child: const Text('Kullanıcıyı Oluştur'),
         ),
       ],
+    );
+  }
+}
+
+class _UserMetric extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final bool emphasize;
+  final bool success;
+
+  const _UserMetric({
+    required this.label,
+    required this.value,
+    required this.icon,
+    this.emphasize = false,
+    this.success = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = success
+        ? SifaBrand.success
+        : emphasize
+            ? SifaBrand.deepGold
+            : SifaBrand.charcoal;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 10),
+      decoration: BoxDecoration(
+        color: success
+            ? SifaBrand.successBg
+            : emphasize
+                ? SifaBrand.goldBg
+                : SifaBrand.ivory,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: success
+              ? SifaBrand.success.withOpacity(0.25)
+              : emphasize
+                  ? SifaBrand.gold.withOpacity(0.35)
+                  : SifaBrand.softGrey,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: foreground),
+          const SizedBox(height: 6),
+          Text(
+            value.toString(),
+            style: TextStyle(
+              color: foreground,
+              fontWeight: FontWeight.w900,
+              fontSize: 19,
+            ),
+          ),
+          Text(
+            label,
+            style: const TextStyle(
+              color: SifaBrand.textGrey,
+              fontWeight: FontWeight.w700,
+              fontSize: 11.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

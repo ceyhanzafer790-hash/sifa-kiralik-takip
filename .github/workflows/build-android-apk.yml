@@ -2,8 +2,13 @@ name: Android APK Build
 
 on:
   workflow_dispatch:
-  push:
+  pull_request:
     branches: [ main ]
+    paths:
+      - 'flutter_client/**'
+      - '.github/workflows/build-android-apk.yml'
+  push:
+    branches: [ main, v0.25-redesign ]
     paths:
       - 'flutter_client/**'
       - '.github/workflows/build-android-apk.yml'
@@ -56,7 +61,7 @@ jobs:
       - name: APK dosyasını yayınla
         uses: actions/upload-artifact@v4
         with:
-          name: sifa-kiralik-takip-v0.24-android
+          name: sifa-kiralik-takip-v0.25-android
           path: |
             flutter_client/build/app/outputs/flutter-apk/app-release.apk
             flutter_client/build/app/outputs/flutter-apk/app-release.apk.sha256

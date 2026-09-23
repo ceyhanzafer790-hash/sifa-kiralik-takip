@@ -281,6 +281,28 @@ class LocalDomainCache {
         .get();
   }
 
+  Future<List<Map<String, dynamic>>> pendingDocuments(String rentalId) async {
+    final rows = await (db.select(db.pendingFileUploads)
+          ..where((r) => r.rentalRecordId.equals(rentalId))
+          ..orderBy([
+            (r) => OrderingTerm.desc(r.createdAt),
+          ]))
+        .get();
+
+    return rows
+        .map(
+          (r) => {
+            'id': r.id,
+            'rental_record_id': r.rentalRecordId,
+            'rental_movement_id': r.rentalMovementId,
+            'document_type': r.documentType,
+            'original_file_name': r.originalFileName,
+            'created_at': r.createdAt.toIso8601String(),
+          },
+        )
+        .toList();
+  }
+
   Future<void> replaceBillingPeriods(
     String rentalId,
     List<Map<String, dynamic>> periods,

@@ -1,13 +1,19 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../services/dashboard_api_repository.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
-import 'document_compliance_screen.dart';
-import 'reminder_center_screen.dart';
-import 'reports_screen.dart';
-import 'receivables_screen.dart';
+import '../services/stock_api_repository.dart';
+import '../widgets/sifa_brand.dart';
+import 'global_search_screen.dart';
+import 'materials_screen.dart';
+import 'customer_list_screen.dart';
 import 'overdue_receivables_screen.dart';
+import 'receivables_screen.dart';
+import 'reminder_center_screen.dart';
+import 'rentals_overview_screen.dart';
 import 'revenue_breakdown_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -20,8 +26,10 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final repo = DashboardApiRepository();
   final roles = RoleService();
+  final stockRepo = StockApiRepository();
 
   Map<String, dynamic>? data;
+  int? stockAttentionCount;
   bool canSeeFinancials = false;
   String? error;
   bool loading = true;
@@ -47,10 +55,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         roles.canSeeFinancials(),
       ]);
 
+      int? nextStockAttention;
+      try {
+        final rows = await stockRepo.allSummaries();
+        nextStockAttention = rows.where((row) {
+          return _double(row['repair']) > 0 ||
+              _double(row['scrap']) > 0 ||
+              _double(row['lost']) > 0;
+        }).length;
+      } catch (_) {
+        nextStockAttention = null;
+      }
+
       if (mounted) {
         setState(() {
           data = result[0] as Map<String, dynamic>;
           canSeeFinancials = result[1] as bool;
+          stockAttentionCount = nextStockAttention;
         });
       }
     } catch (e) {
@@ -66,183 +87,285 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final renewals = ((d?['renewals'] as List?) ?? const [])
         .map((e) => Map<String, dynamic>.from(e as Map))
         .toList();
+    final recentMovements =
+        ((d?['recent_movements'] as List?) ?? const [])
+            .map((e) => Map<String, dynamic>.from(e as Map))
+            .toList();
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final cardWidth = math.min(
+      230.0,
+      math.max(155.0, (screenWidth - 42) / 2),
+    );
 
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
-                child: Text(
-                  'Genel Durum',
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineMedium
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Merhaba',
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                            fontWeight: FontWeight.w900,
+                          ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      'Bugün de sağlam adımlar atalım.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: SifaBrand.textGrey,
+                          ),
+                    ),
+                  ],
                 ),
               ),
-              if (d != null)
-                Chip(
-                  avatar: Icon(
-                    d['source'] == 'server'
-                        ? Icons.cloud_done_outlined
-                        : Icons.phone_android_outlined,
-                    size: 18,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    _displayDate(DateTime.now().toIso8601String()),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
                   ),
-                  label: Text(
-                    d['source'] == 'server'
-                        ? 'Merkez'
-                        : 'Offline veri',
-                  ),
-                ),
+                  const SizedBox(height: 3),
+                  if (d != null)
+                    Text(
+                      d['source'] == 'server' ? 'Merkez veri' : 'Offline veri',
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                            color: SifaBrand.textGrey,
+                          ),
+                    ),
+                ],
+              ),
             ],
           ),
-          if (loading) const LinearProgressIndicator(),
+          const SizedBox(height: 16),
+          Card(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(18),
+              onTap: () => _open(const GlobalSearchScreen()),
+              child: const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+                child: Row(
+                  children: [
+                    Icon(Icons.search),
+                    SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Müşteri, şantiye, malzeme veya kiralama ara',
+                      ),
+                    ),
+                    Icon(Icons.chevron_right),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (loading) ...[
+            const SizedBox(height: 10),
+            const LinearProgressIndicator(),
+          ],
           if (error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text('Güncelleme hatası: $error'),
             ),
-          const SizedBox(height: 14),
           if (d != null) ...[
-            _section(context, 'Bugün ve Yaklaşanlar'),
-            Wrap(
-              spacing: 10,
-              runSpacing: 10,
-              children: [
-                _StatCard(
-                  title: 'Bugün kira',
-                  value: _count(d['renewal_due_today_count']),
-                  icon: Icons.event_repeat_outlined,
-                  onTap: () => _open(
-                    const ReminderCenterScreen(),
+            const SizedBox(height: 18),
+            Text(
+              'Genel Durum',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w900,
                   ),
-                ),
-                _StatCard(
-                  title: '3 gün içinde',
-                  value: _count(d['renewal_next_3_days_count']),
-                  icon: Icons.upcoming_outlined,
-                  onTap: () => _open(
-                    const ReminderCenterScreen(),
-                  ),
-                ),
-                _StatCard(
-                  title: 'Fatura bekliyor',
-                  value: _count(d['invoice_reminder_count']),
-                  icon: Icons.receipt_long_outlined,
-                  onTap: () => _open(
-                    const ReminderCenterScreen(),
-                  ),
-                ),
-                _StatCard(
-                  title: 'Eksik belge',
-                  value: _count(d['missing_document_count']),
-                  subtitle:
-                      '${_count(d['missing_document_rental_count'])} kiralama',
-                  icon: Icons.description_outlined,
-                  onTap: d['source'] == 'server'
-                      ? () => _open(
-                            const DocumentComplianceScreen(),
-                          )
-                      : null,
-                ),
-              ],
             ),
-            if (canSeeFinancials &&
-                d['financials_visible'] != false) ...[
-              const SizedBox(height: 20),
-              _section(context, 'Finansal Görünüm'),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  _MoneyCard(
-                    title: 'Tahmini aylık kira',
-                    amount: _double(
-                      d['estimated_monthly_rental_revenue'],
-                    ),
-                    subtitle:
-                        '${_count(d['estimated_revenue_unpriced_item_count'])} fiyatı eksik kalem',
-                    icon: Icons.trending_up_outlined,
-                    footnote: 'Tahmindir, fatura değildir.',
-                    onTap: d['source'] == 'server'
-                        ? () => _open(
-                              const RevenueBreakdownScreen(),
-                            )
-                        : null,
-                  ),
-                  _MoneyCard(
-                    title: 'Kesilmiş fatura alacağı',
-                    amount: _double(
-                      d['issued_receivable_balance'],
-                    ),
-                    subtitle:
-                        '${_count(d['issued_receivable_count'])} açık dönem',
-                    icon: Icons.account_balance_wallet_outlined,
-                    footnote:
-                        'Kesilmiş faturaların kalan bakiyesi.',
-                    onTap: d['source'] == 'server'
-                        ? () => _open(
-                              const ReceivablesScreen(),
-                            )
-                        : null,
-                  ),
-                  _MoneyCard(
-                    title: 'Vadesi geçmiş alacak',
-                    amount: _double(
-                      d['overdue_receivable_balance'],
-                    ),
-                    subtitle:
-                        '${_count(d['overdue_receivable_count'])} dönem • '
-                        '${_count(d['open_invoice_missing_due_date_count'])} faturada vade yok',
-                    icon: Icons.warning_amber_outlined,
-                    footnote:
-                        'Yalnız ödeme vadesi girilmiş faturalar üzerinden.',
-                    onTap: d['source'] == 'server'
-                        ? () => _open(
-                              const OverdueReceivablesScreen(),
-                            )
-                        : null,
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 20),
-            _section(context, 'Kayıt Sağlığı'),
+            const SizedBox(height: 10),
             Wrap(
               spacing: 10,
               runSpacing: 10,
               children: [
-                _StatCard(
-                  title: 'Müşteri',
+                _MetricCard(
+                  width: cardWidth,
+                  title: 'Aktif Müşteri',
                   value: _count(d['customer_count']),
-                  icon: Icons.people_outline,
+                  subtitle: 'Kayıtlı müşteri',
+                  icon: Icons.people_alt_outlined,
+                  onTap: () => _open(const CustomerListScreen()),
                 ),
-                _StatCard(
-                  title: 'Stok güveni bilinmiyor',
-                  value: _count(d['unknown_stock_product_count']),
+                _MetricCard(
+                  width: cardWidth,
+                  title: 'Aktif Kiralama',
+                  value: _count(d['active_rental_count']),
+                  subtitle: 'Devam eden kiralama',
                   icon: Icons.inventory_2_outlined,
+                  onTap: () => _open(const RentalsOverviewScreen()),
                 ),
-                _StatCard(
-                  title: 'Eski veri bekliyor',
-                  value: _count(d['legacy_import_pending']),
-                  subtitle: d['legacy_import_pending'] == null
-                      ? 'Merkez bağlantısında görünür'
-                      : null,
-                  icon: Icons.rule_folder_outlined,
+                _MetricCard(
+                  width: cardWidth,
+                  title: 'Müşteride',
+                  value: _count(d['active_rental_item_count']),
+                  subtitle: 'Aktif malzeme kalemi',
+                  icon: Icons.apartment_outlined,
+                  onTap: () => _open(const RentalsOverviewScreen()),
                 ),
-                _StatCard(
-                  title: 'Raporlar',
-                  value: 'Excel / CSV',
-                  icon: Icons.assessment_outlined,
-                  onTap: () => _open(const ReportsScreen()),
+                _MetricCard(
+                  width: cardWidth,
+                  title: 'Bugünkü Hareket',
+                  value: _count(d['today_movement_count']),
+                  subtitle: 'Giden + gelen',
+                  icon: Icons.arrow_forward_rounded,
+                  onTap: () => _open(const RentalsOverviewScreen()),
                 ),
+                if (stockAttentionCount != null)
+                  _MetricCard(
+                    width: cardWidth,
+                    title: 'Stok Uyarısı',
+                    value: stockAttentionCount.toString(),
+                    subtitle: stockAttentionCount == 0
+                        ? 'Sorunlu stok görünmüyor'
+                        : 'Tamirlik / hurda / kayıp',
+                    icon: stockAttentionCount == 0
+                        ? Icons.verified_outlined
+                        : Icons.build_circle_outlined,
+                    onTap: () => _open(const MaterialsScreen()),
+                  ),
               ],
             ),
             const SizedBox(height: 22),
-            _section(context, 'Yaklaşan Kira Yenilemeleri'),
+            const SifaSectionTitle(
+              title: 'Son Hareketler',
+            ),
+            const SizedBox(height: 8),
+            if (recentMovements.isEmpty)
+              const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Henüz malzeme hareketi görünmüyor.'),
+                ),
+              )
+            else
+              ...recentMovements.map((movement) {
+                final outbound =
+                    movement['movement_type']?.toString() == 'outbound';
+                final date = DateTime.tryParse(
+                  movement['movement_date']?.toString() ?? '',
+                );
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 7),
+                  child: Card(
+                    child: ListTile(
+                      leading: Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(
+                          color: outbound
+                              ? SifaBrand.gold.withOpacity(0.12)
+                              : SifaBrand.successBg,
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        alignment: Alignment.center,
+                        child: SifaBuildingMark(
+                          size: 28,
+                          gold: outbound,
+                        ),
+                      ),
+                      title: Text(
+                        movement['customer_name']?.toString() ?? 'Müşteri',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      subtitle: Text(
+                        [
+                          if (date != null) _displayDate(date.toIso8601String()),
+                          '${_number(_double(movement['quantity']))} '
+                              '${_unit(movement['unit'])} '
+                              '${movement['product_name'] ?? 'Malzeme'} '
+                              '${outbound ? 'çıktı' : 'geri geldi'}',
+                        ].join('\n'),
+                      ),
+                      trailing: Icon(
+                        outbound ? Icons.north_east : Icons.south_west,
+                        color: outbound
+                            ? SifaBrand.deepGold
+                            : SifaBrand.success,
+                      ),
+                      isThreeLine: true,
+                    ),
+                  ),
+                );
+              }),
+            if (canSeeFinancials && d['financials_visible'] != false) ...[
+              const SizedBox(height: 22),
+              Text(
+                'Para Durumu',
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w900,
+                    ),
+              ),
+              const SizedBox(height: 10),
+              _FinancialCard(
+                title: 'Tahmini aylık kira',
+                amount: _double(d['estimated_monthly_rental_revenue']),
+                subtitle:
+                    '${_count(d['estimated_revenue_unpriced_item_count'])} fiyatı eksik kalem',
+                icon: Icons.trending_up,
+                onTap: d['source'] == 'server'
+                    ? () => _open(const RevenueBreakdownScreen())
+                    : null,
+              ),
+              const SizedBox(height: 8),
+              _FinancialCard(
+                title: 'Açık alacak',
+                amount: _double(d['issued_receivable_balance']),
+                subtitle:
+                    '${_count(d['issued_receivable_count'])} açık dönem',
+                icon: Icons.account_balance_wallet_outlined,
+                onTap: d['source'] == 'server'
+                    ? () => _open(const ReceivablesScreen())
+                    : null,
+              ),
+              if (_double(d['overdue_receivable_balance']) > 0) ...[
+                const SizedBox(height: 8),
+                _FinancialCard(
+                  title: 'Vadesi geçmiş',
+                  amount: _double(d['overdue_receivable_balance']),
+                  subtitle:
+                      '${_count(d['overdue_receivable_count'])} geciken dönem',
+                  icon: Icons.warning_amber_rounded,
+                  onTap: d['source'] == 'server'
+                      ? () => _open(const OverdueReceivablesScreen())
+                      : null,
+                ),
+              ],
+            ],
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Yaklaşan Kiralar',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w900,
+                        ),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () => _open(const ReminderCenterScreen()),
+                  child: const Text('Tümünü Gör'),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
             if (renewals.isEmpty)
               const Card(
                 child: Padding(
@@ -253,40 +376,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               )
             else
-              ...renewals.take(15).map(
+              ...renewals.take(6).map(
                 (r) {
                   final invoiceRequired =
                       r['invoice_preference'] == 'invoice_required';
-                  final invoiceIssued =
-                      r['invoice_status'] == 'issued';
-                  final daysUntil =
-                      (r['days_until'] as num?)?.toInt() ?? 0;
+                  final invoiceIssued = r['invoice_status'] == 'issued';
+                  final daysUntil = (r['days_until'] as num?)?.toInt() ?? 0;
 
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Card(
                       child: ListTile(
-                        leading: Icon(
-                          invoiceRequired && !invoiceIssued
-                              ? Icons.receipt_long_outlined
-                              : Icons.event_repeat_outlined,
+                        leading: Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: invoiceRequired && !invoiceIssued
+                                ? SifaBrand.goldBg
+                                : SifaBrand.ivory,
+                            borderRadius: BorderRadius.circular(11),
+                            border: Border.all(
+                              color: invoiceRequired && !invoiceIssued
+                                  ? SifaBrand.gold.withOpacity(0.35)
+                                  : SifaBrand.softGrey,
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            invoiceRequired && !invoiceIssued
+                                ? Icons.receipt_long_outlined
+                                : Icons.event_repeat_outlined,
+                            color: invoiceRequired && !invoiceIssued
+                                ? SifaBrand.deepGold
+                                : SifaBrand.textGrey,
+                            size: 20,
+                          ),
                         ),
                         title: Text(
-                          '${r['customer_name']} • '
-                          '${_displayDate(r['renewal_date'])}',
+                          r['customer_name']?.toString() ?? 'Müşteri',
                           style: const TextStyle(
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
                         subtitle: Text(
                           [
                             if (r['address_label'] != null)
                               r['address_label'].toString(),
+                            _displayDate(r['renewal_date']),
                             daysUntil == 0
-                                ? 'Kira yenilemesi bugün'
+                                ? 'Bugün'
                                 : '$daysUntil gün kaldı',
                             if (invoiceRequired && !invoiceIssued)
-                              'FATURA KESİLECEK',
+                              'Fatura bekliyor',
                           ].join(' • '),
                         ),
                       ),
@@ -295,21 +436,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 },
               ),
           ],
-          const SizedBox(height: 30),
         ],
       ),
     );
   }
-
-  Widget _section(BuildContext context, String title) => Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: Text(
-          title,
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w900,
-              ),
-        ),
-      );
 
   void _open(Widget page) {
     Navigator.of(context).push(
@@ -322,61 +452,89 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return (value as num).toInt().toString();
   }
 
-  double _double(dynamic value) =>
-      (value as num?)?.toDouble() ?? 0;
+  double _double(dynamic value) => (value as num?)?.toDouble() ?? 0;
+
+  String _number(double value) => value == value.roundToDouble()
+      ? value.toInt().toString()
+      : value
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+
+  String _unit(dynamic unit) => switch (unit?.toString()) {
+        'sheet' => 'Levha',
+        'meter' => 'Metre',
+        'squareMeter' || 'square_meter' => 'm²',
+        'cubicMeter' || 'cubic_meter' => 'm³',
+        'kilogram' => 'kg',
+        'liter' => 'Litre',
+        'set' => 'Takım',
+        _ => 'Adet',
+      };
 
   String _displayDate(dynamic raw) {
     final d = DateTime.tryParse(raw.toString());
     return d == null ? raw.toString() : trDate(d);
   }
+
 }
 
-class _StatCard extends StatelessWidget {
+class _MetricCard extends StatelessWidget {
+  final double width;
   final String title;
   final String value;
-  final String? subtitle;
+  final String subtitle;
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _StatCard({
+  const _MetricCard({
+    required this.width,
     required this.title,
     required this.value,
+    required this.subtitle,
     required this.icon,
-    this.subtitle,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 185,
+      width: width,
       child: Card(
         child: InkWell(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.all(15),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(icon),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: SifaBrand.gold.withOpacity(0.13),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: SifaBrand.deepGold, size: 21),
+                ),
                 const SizedBox(height: 10),
-                Text(title),
-                const SizedBox(height: 5),
                 Text(
                   value,
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w900),
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.w900,
+                      ),
                 ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
+                const SizedBox(height: 2),
+                Text(
+                  title,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
               ],
             ),
           ),
@@ -386,56 +544,72 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-class _MoneyCard extends StatelessWidget {
+class _FinancialCard extends StatelessWidget {
   final String title;
   final double amount;
   final String subtitle;
-  final String footnote;
   final IconData icon;
   final VoidCallback? onTap;
 
-  const _MoneyCard({
+  const _FinancialCard({
     required this.title,
     required this.amount,
     required this.subtitle,
-    required this.footnote,
     required this.icon,
     this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 280,
-      child: Card(
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Icon(icon),
-              const SizedBox(height: 10),
-              Text(title),
-              const SizedBox(height: 5),
-              Text(
-                '${_money(amount)} ₺',
-                style: Theme.of(context)
-                    .textTheme
-                    .headlineSmall
-                    ?.copyWith(fontWeight: FontWeight.w900),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: SifaBrand.gold.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: SifaBrand.deepGold,
+                  size: 21,
+                ),
               ),
-              const SizedBox(height: 5),
-              Text(subtitle),
-              const SizedBox(height: 8),
-              Text(
-                footnote,
-                style: Theme.of(context).textTheme.bodySmall,
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_money(amount)} ₺',
+                      style:
+                          Theme.of(context).textTheme.titleLarge?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
               ),
-              ],
-            ),
+              const Icon(
+                Icons.chevron_right,
+                color: SifaBrand.deepGold,
+              ),
+            ],
           ),
         ),
       ),
@@ -455,8 +629,6 @@ class _MoneyCard extends StatelessWidget {
     }
 
     final whole = groups.reversed.join('.');
-    return parts[1] == '00'
-        ? whole
-        : '$whole,${parts[1]}';
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
   }
 }

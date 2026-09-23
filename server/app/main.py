@@ -1888,6 +1888,7 @@ def customer_sales(customer_id: str, user=Depends(current_user)):
               s.note,
               s.status,
               s.created_at,
+              count(si.id) as item_count,
               coalesce(sum(si.line_total), 0) as total_amount
             from sales s
             left join sale_items si on si.sale_id = s.id
@@ -1935,6 +1936,46 @@ def create_sale(
         total = 0.0
         items = []
         for item in data.items:
+            cur.execute(
+                """
+                select
+                  p.name,
+                  coalesce(
+                    sum(sm.quantity) filter (where sm.bucket = 'available'),
+                    0
+                  ) as available
+                from products p
+                left join stock_movements sm on sm.product_id = p.id
+                where p.id = %s
+                group by p.id, p.name
+                """,
+                (item.product_id,),
+            )
+            stock = cur.fetchone()
+            if stock is None:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Satış malzemesi bulunamadı.",
+                )
+
+            available = float(stock["available"])
+            requested = float(item.quantity)
+            if requested > available:
+                raise HTTPException(
+                    status_code=409,
+                    detail={
+                        "code": "insufficient_stock",
+                        "product_id": str(item.product_id),
+                        "product_name": stock["name"],
+                        "available": available,
+                        "requested": requested,
+                        "message": (
+                            f"{stock['name']} için kullanılabilir stok yetersiz. "
+                            f"Mevcut: {available}, istenen: {requested}."
+                        ),
+                    },
+                )
+
             cur.execute(
                 """
                 insert into sale_items(
@@ -2456,6 +2497,49 @@ def stock_write_off(
             "from": data.source_bucket,
             "to": destination_bucket,
         }
+
+
+@app.get("/stock/summary")
+def stock_summary(user=Depends(current_user)):
+    with db() as (_, cur):
+        cur.execute(
+            """
+            select
+              product_id,
+              product_name,
+              category,
+              unit,
+              trade_mode,
+              stock_confidence,
+              last_count_at,
+              available_quantity,
+              repair_quantity,
+              scrap_quantity,
+              lost_quantity
+            from v_stock_summary
+            order by product_name
+            """
+        )
+        rows = cur.fetchall()
+
+    return [
+        {
+            "product_id": str(row["product_id"]),
+            "product_name": row["product_name"],
+            "category": row["category"],
+            "unit": row["unit"],
+            "trade_mode": row["trade_mode"],
+            "available": row["available_quantity"],
+            "repair": row["repair_quantity"],
+            "scrap": row["scrap_quantity"],
+            "lost": row["lost_quantity"],
+            "last_count": row["last_count_at"],
+            "confidence": row["stock_confidence"] or (
+                "counted" if row["last_count_at"] else "estimated"
+            ),
+        }
+        for row in rows
+    ]
 
 
 @app.get("/stock/products/{product_id}/summary")

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/customer_api_repository.dart';
 import '../services/report_download_service.dart';
 import '../services/role_service.dart';
+import '../widgets/sifa_brand.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({super.key});
@@ -150,25 +151,102 @@ class _ReportsScreenState extends State<ReportsScreen> {
     ].join(' • ');
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Raporlar')),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 110),
         children: [
+          Card(
+            clipBehavior: Clip.antiAlias,
+            child: Container(
+              width: double.infinity,
+              color: SifaBrand.charcoal,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.bar_chart_outlined,
+                    color: SifaBrand.gold,
+                    size: 28,
+                  ),
+                  SizedBox(width: 11),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Rapor Merkezi',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 17,
+                          ),
+                        ),
+                        SizedBox(height: 3),
+                        Text(
+                          'Kiralama, satış, stok ve finans raporlarını dışa aktar.',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Rapor Filtresi',
-                    style: TextStyle(fontWeight: FontWeight.w900),
+                  Row(
+                    children: [
+                      Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: SifaBrand.gold.withOpacity(0.13),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.tune_rounded,
+                          color: SifaBrand.deepGold,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      const Expanded(
+                        child: Text(
+                          'Rapor Filtresi',
+                          style: TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    filterText.isEmpty
-                        ? 'Tüm kayıtlar'
-                        : filterText,
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 11,
+                      vertical: 9,
+                    ),
+                    decoration: BoxDecoration(
+                      color: SifaBrand.ivory,
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(color: SifaBrand.softGrey),
+                    ),
+                    child: Text(
+                      filterText.isEmpty
+                          ? 'Tüm kayıtlar'
+                          : filterText,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                   const SizedBox(height: 10),
                   Wrap(
@@ -225,17 +303,27 @@ class _ReportsScreenState extends State<ReportsScreen> {
             xlsxBusy: busy == 'stock:xlsx',
             csvBusy: busy == 'stock:csv',
           ),
+          _ReportCard(
+            title: 'Satışlar',
+            subtitle:
+                'Müşteri, satış tarihi, malzeme, miktar, birim fiyat ve toplam.',
+            icon: Icons.sell_outlined,
+            onXlsx: () => _download('sales', 'xlsx'),
+            onCsv: () => _download('sales', 'csv'),
+            xlsxBusy: busy == 'sales:xlsx',
+            csvBusy: busy == 'sales:csv',
+          ),
           if (isAdmin)
             _ReportCard(
-            title: 'Fatura ve Tahsilat',
-            subtitle:
-                'Kira dönemi, fatura durumu, tahsil edilen ve kalan bakiye.',
-            icon: Icons.receipt_long_outlined,
-            onXlsx: () => _download('billing', 'xlsx'),
-            onCsv: () => _download('billing', 'csv'),
-            xlsxBusy: busy == 'billing:xlsx',
-            csvBusy: busy == 'billing:csv',
-          ),
+              title: 'Fatura ve Tahsilat',
+              subtitle:
+                  'Kira dönemi, fatura durumu, tahsil edilen ve kalan bakiye.',
+              icon: Icons.receipt_long_outlined,
+              onXlsx: () => _download('billing', 'xlsx'),
+              onCsv: () => _download('billing', 'csv'),
+              xlsxBusy: busy == 'billing:xlsx',
+              csvBusy: busy == 'billing:csv',
+            ),
         ],
       ),
     );
@@ -282,9 +370,19 @@ class _ReportCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Icon(icon),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: SifaBrand.gold.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(11),
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  icon,
+                  color: SifaBrand.deepGold,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -294,7 +392,7 @@ class _ReportCard extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        fontSize: 17,
+                        fontSize: 16,
                         fontWeight: FontWeight.w900,
                       ),
                     ),

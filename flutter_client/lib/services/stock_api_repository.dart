@@ -5,6 +5,13 @@ class StockApiRepository {
 
   final ApiClient api;
 
+  Future<List<Map<String, dynamic>>> allSummaries() async {
+    final data = await api.getJson('/stock/summary') as List;
+    return data
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
+  }
+
   Future<Map<String, dynamic>> productSummary(String productId) async {
     final data = await api.getJson('/stock/products/$productId/summary');
     return Map<String, dynamic>.from(data as Map);

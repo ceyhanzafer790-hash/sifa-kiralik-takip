@@ -8,6 +8,7 @@ import '../services/customer_api_repository.dart';
 import 'customer_detail_screen.dart';
 import 'rental_tracking_detail_screen.dart';
 import '../services/report_download_service.dart';
+import '../widgets/sifa_brand.dart';
 
 class AuditLogScreen extends StatefulWidget {
   const AuditLogScreen({super.key});
@@ -199,18 +200,62 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
     final pageEnd = (offset + rows.length).clamp(0, total);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('İşlem Geçmişi')),
+      appBar: AppBar(
+        title: const Text(
+          'İşlem Geçmişi',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: () => _load(),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(14),
-                child: Text(
-                  'Kullanıcı, kayıt türü, işlem, tarih ve serbest metin '
-                  'ile denetim geçmişini filtreleyebilirsin.',
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                color: SifaBrand.charcoal,
+                padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.history_outlined,
+                      color: SifaBrand.gold,
+                      size: 27,
+                    ),
+                    SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Denetim Kayıtları',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Kullanıcı, kayıt türü, işlem ve tarihe göre hareketleri incele.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -226,7 +271,6 @@ class _AuditLogScreenState extends State<AuditLogScreen> {
                   onPressed: () => _load(reset: true),
                   icon: const Icon(Icons.arrow_forward),
                 ),
-                border: const OutlineInputBorder(),
               ),
               onSubmitted: (_) => _load(reset: true),
             ),

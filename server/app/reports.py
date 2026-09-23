@@ -52,6 +52,18 @@ STOCK_HEADERS = [
     ("last_count_at", "Son Fiziksel Sayım"),
 ]
 
+SALES_HEADERS = [
+    ("customer_name", "Müşteri"),
+    ("sale_date", "Satış Tarihi"),
+    ("product_name", "Malzeme"),
+    ("unit_label", "Birim"),
+    ("quantity", "Miktar"),
+    ("unit_price", "Birim Fiyat"),
+    ("line_total", "Toplam"),
+    ("note", "Not"),
+]
+
+
 AUDIT_HEADERS = [
     ("created_at", "Tarih/Saat"),
     ("user_name", "Kullanıcı"),
@@ -187,6 +199,57 @@ def _stock(
             "estimated": "Tahmini / hareketlerden",
             "unknown": "Bilinmiyor",
         }.get(d["stock_confidence"], d["stock_confidence"])
+        result.append(d)
+    return result
+
+
+def _sales(
+    customer_id: str | None = None,
+    from_date: date | None = None,
+    to_date: date | None = None,
+) -> list[dict[str, Any]]:
+    conditions = ["s.status = 'completed'"]
+    params: list[Any] = []
+
+    if customer_id:
+        conditions.append("s.customer_id = %s")
+        params.append(customer_id)
+    if from_date:
+        conditions.append("s.sale_date >= %s")
+        params.append(from_date)
+    if to_date:
+        conditions.append("s.sale_date <= %s")
+        params.append(to_date)
+
+    where = "where " + " and ".join(conditions)
+
+    with db() as (_, cur):
+        cur.execute(
+            f"""
+            select
+              c.name as customer_name,
+              s.sale_date,
+              p.name as product_name,
+              p.unit,
+              si.quantity,
+              si.unit_price,
+              si.line_total,
+              s.note
+            from sales s
+            join customers c on c.id = s.customer_id
+            join sale_items si on si.sale_id = s.id
+            join products p on p.id = si.product_id
+            {where}
+            order by s.sale_date desc, c.name, p.name
+            """,
+            tuple(params),
+        )
+        rows = cur.fetchall()
+
+    result = []
+    for row in rows:
+        d = dict(row)
+        d["unit_label"] = UNIT_LABELS.get(d["unit"], d["unit"])
         result.append(d)
     return result
 
@@ -402,6 +465,29 @@ def stock_report(
         "Stok Özeti",
         _stock(confidence=confidence, category=category),
         STOCK_HEADERS,
+        format,
+    )
+
+
+@router.get("/sales")
+def sales_report(
+    format: str = Query(default="xlsx", pattern="^(xlsx|csv)$"),
+    customer_id: str | None = None,
+    from_date: date | None = None,
+    to_date: date | None = None,
+    user=Depends(current_user),
+):
+    _validate_range(from_date, to_date)
+
+    return _response(
+        "sales",
+        "Satışlar",
+        _sales(
+            customer_id=customer_id,
+            from_date=from_date,
+            to_date=to_date,
+        ),
+        SALES_HEADERS,
         format,
     )
 

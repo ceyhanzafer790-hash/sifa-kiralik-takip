@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/admin_api_repository.dart';
 import '../services/diagnostics_download_service.dart';
+import '../widgets/sifa_brand.dart';
 
 class SystemStatusScreen extends StatefulWidget {
   const SystemStatusScreen({super.key});
@@ -83,13 +84,69 @@ class _SystemStatusScreenState extends State<SystemStatusScreen> {
     final usage = _map(h?['usage']);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Sistem Durumu')),
+      appBar: AppBar(
+        title: const Text(
+          'Sistem Durumu',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (loading) const LinearProgressIndicator(),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Container(
+                color: SifaBrand.charcoal,
+                padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.monitor_heart_outlined,
+                      color: SifaBrand.gold,
+                      size: 28,
+                    ),
+                    SizedBox(width: 11),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Sistem Sağlığı',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 17,
+                            ),
+                          ),
+                          SizedBox(height: 3),
+                          Text(
+                            'Veritabanı, disk, yedek ve servis durumunu tek ekranda izle.',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (loading) ...[
+              const SizedBox(height: 10),
+              const LinearProgressIndicator(minHeight: 2),
+            ],
             if (error != null)
               Card(
                 child: Padding(
@@ -232,21 +289,52 @@ class _HealthCard extends StatelessWidget {
       'critical' => Icons.error_outline,
       _ => Icons.warning_amber_outlined,
     };
+    final background = switch (level) {
+      'ok' => SifaBrand.successBg,
+      'critical' => const Color(0xFFFFECEC),
+      _ => const Color(0xFFFFF4E5),
+    };
+    final foreground = switch (level) {
+      'ok' => SifaBrand.success,
+      'critical' => const Color(0xFFA53C3C),
+      _ => const Color(0xFF9A5D00),
+    };
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Card(
         child: ListTile(
-          leading: Icon(icon),
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+          leading: Container(
+            width: 42,
+            height: 42,
+            decoration: BoxDecoration(
+              color: background,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            alignment: Alignment.center,
+            child: Icon(
+              icon,
+              color: foreground,
+              size: 21,
+            ),
+          ),
           title: Text(
             title,
             style: const TextStyle(fontWeight: FontWeight.w900),
           ),
           subtitle: Text(subtitle),
-          trailing: Text(
-            value,
-            textAlign: TextAlign.right,
-            style: const TextStyle(fontWeight: FontWeight.w800),
+          trailing: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 130),
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: foreground,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
         ),
       ),
