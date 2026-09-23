@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../database/local_database.dart';
 import '../services/conflict_diff_service.dart';
 import '../services/conflict_service.dart';
+import '../widgets/sifa_brand.dart';
+import '../widgets/status_pill.dart';
 
 class ConflictResolutionScreen extends StatefulWidget {
   const ConflictResolutionScreen({super.key});
@@ -158,20 +160,74 @@ class _ConflictResolutionScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Senkron Çakışmaları')),
+      appBar: AppBar(
+        title: const Text(
+          'Senkron Çakışmaları',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(14),
-                child: Text(
-                  'İki cihaz aynı kaydı değiştirirse uygulama birini '
-                  'sessizce ezmez. Alanları karşılaştırıp hangi değişikliğin '
-                  'devam edeceğini seçebilirsin.',
-                ),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: SifaBrand.charcoal,
+                    padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.sync_problem_outlined,
+                          color: SifaBrand.gold,
+                          size: 27,
+                        ),
+                        SizedBox(width: 11),
+                        Expanded(
+                          child: Text(
+                            'Aynı kayıt iki cihazda değiştiğinde hangi sürümün devam edeceğini burada seç.',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Açık çakışma',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        StatusPill(
+                          label: '${rows.length}',
+                          tone: rows.isEmpty
+                              ? AppStatusTone.success
+                              : AppStatusTone.warning,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 10),
@@ -188,7 +244,19 @@ class _ConflictResolutionScreenState
                 padding: const EdgeInsets.only(bottom: 8),
                 child: Card(
                   child: ListTile(
-                    leading: const Icon(Icons.sync_problem_outlined),
+                    leading: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF4E5),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.sync_problem_outlined,
+                        color: Color(0xFF9A5D00),
+                      ),
+                    ),
                     title: Text(
                       _label(r.operationType),
                       style: const TextStyle(fontWeight: FontWeight.w800),
@@ -197,7 +265,10 @@ class _ConflictResolutionScreenState
                       '${r.message}\n${r.createdAt}',
                     ),
                     isThreeLine: true,
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: SifaBrand.deepGold,
+                    ),
                     onTap: () => _open(r),
                   ),
                 ),
@@ -230,10 +301,11 @@ class _ValueBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
+        color: SifaBrand.ivory,
         border: Border.all(
-          color: Theme.of(context).dividerColor,
+          color: SifaBrand.softGrey,
         ),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
