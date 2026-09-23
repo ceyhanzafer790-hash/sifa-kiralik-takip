@@ -149,8 +149,7 @@ class _CustomerListScreenState extends State<CustomerListScreen> {
             latestMovements.clear();
           }
 
-          if (latestOutboundDate != null &&
-              _sameDay(movementDate, latestOutboundDate)) {
+          if (_sameDay(movementDate, latestOutboundDate)) {
             final product = productById[movement.productId];
             latestMovements.add(
               _OutboundMovementSummary(
