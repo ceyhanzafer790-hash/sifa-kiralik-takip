@@ -128,7 +128,8 @@ class _MaterialsScreenState extends State<MaterialsScreen> {
     var hadError = false;
 
     for (var i = 0; i < products.length; i += 6) {
-      final end = (i + 6).clamp(0, products.length);
+      final end =
+          i + 6 < products.length ? i + 6 : products.length;
       final batch = products.sublist(i, end);
 
       final results = await Future.wait(
