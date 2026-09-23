@@ -16,9 +16,9 @@ class SifaKiralikTakipApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const navy = Color(0xFF24324A);
-    const warmGold = Color(0xFF9A7447);
-    const canvas = Color(0xFFF7F6F3);
+    const navy = Color(0xFF111111);
+    const warmGold = Color(0xFFD4AF37);
+    const canvas = Color(0xFFFAFAF8);
 
     final scheme = ColorScheme.fromSeed(
       seedColor: navy,
@@ -27,7 +27,7 @@ class SifaKiralikTakipApp extends StatelessWidget {
       primary: navy,
       secondary: warmGold,
       surface: const Color(0xFFFFFFFF),
-      surfaceContainerHighest: const Color(0xFFF0EFEB),
+      surfaceContainerHighest: const Color(0xFFF4F4F1),
     );
 
     return MaterialApp(
@@ -89,12 +89,12 @@ class SifaKiralikTakipApp extends StatelessWidget {
         ),
         cardTheme: CardThemeData(
           margin: EdgeInsets.zero,
-          elevation: 1.2,
+          elevation: 0.8,
           shadowColor: Colors.black.withOpacity(0.08),
           surfaceTintColor: Colors.transparent,
           color: Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(14),
             side: BorderSide(
               color: Colors.black.withOpacity(0.045),
             ),
@@ -105,7 +105,7 @@ class SifaKiralikTakipApp extends StatelessWidget {
           elevation: 2,
           backgroundColor: Colors.white,
           surfaceTintColor: Colors.transparent,
-          indicatorColor: navy.withOpacity(0.10),
+          indicatorColor: warmGold.withOpacity(0.16),
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
           labelTextStyle: WidgetStateProperty.resolveWith(
             (states) => TextStyle(
@@ -121,8 +121,8 @@ class SifaKiralikTakipApp extends StatelessWidget {
         ),
         floatingActionButtonTheme: const FloatingActionButtonThemeData(
           elevation: 3,
-          backgroundColor: navy,
-          foregroundColor: Colors.white,
+          backgroundColor: warmGold,
+          foregroundColor: navy,
           shape: StadiumBorder(),
         ),
         filledButtonTheme: FilledButtonThemeData(
