@@ -422,8 +422,16 @@ class _RentalTrackingDetailScreenState
       child: Scaffold(
         appBar: AppBar(
           title: const Text(
-            'Kiralama Detayı',
+            'Kiralama',
             style: TextStyle(fontWeight: FontWeight.w900),
+          ),
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(1),
+            child: Divider(
+              height: 1,
+              thickness: 1,
+              color: SifaBrand.gold,
+            ),
           ),
           actions: [
             if (pending)
@@ -444,7 +452,7 @@ class _RentalTrackingDetailScreenState
           children: [
             if (loading) const LinearProgressIndicator(minHeight: 2),
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
               child: _RentalHero(
                 customerName:
                     rental['customer_name']?.toString() ?? 'Müşteri',
@@ -465,7 +473,7 @@ class _RentalTrackingDetailScreenState
                     child: FilledButton.icon(
                       onPressed: _shareWhatsApp,
                       icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text('WhatsApp Özeti'),
+                      label: const Text('WhatsApp'),
                     ),
                   ),
                   const SizedBox(width: 8),
@@ -483,6 +491,13 @@ class _RentalTrackingDetailScreenState
             const TabBar(
               isScrollable: true,
               tabAlignment: TabAlignment.start,
+              labelColor: SifaBrand.charcoal,
+              unselectedLabelColor: SifaBrand.textGrey,
+              indicatorColor: SifaBrand.gold,
+              indicatorWeight: 3,
+              dividerColor: Colors.transparent,
+              labelStyle: TextStyle(fontWeight: FontWeight.w900),
+              unselectedLabelStyle: TextStyle(fontWeight: FontWeight.w700),
               tabs: [
                 Tab(text: 'Genel Bakış'),
                 Tab(text: 'Hareketler'),
@@ -1130,22 +1145,27 @@ class _RentalHero extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Row(
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          Container(
+            width: double.infinity,
+            color: SifaBrand.charcoal,
+            padding: const EdgeInsets.fromLTRB(16, 15, 14, 15),
+            child: Row(
               children: [
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: SifaBrand.ivory,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: SifaBrand.softGrey),
+                    color: Colors.white.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(
+                      color: SifaBrand.gold.withOpacity(0.45),
+                    ),
                   ),
                   alignment: Alignment.center,
-                  child: const SifaBuildingMark(size: 32, gold: false),
+                  child: const SifaBuildingMark(size: 32, gold: true),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -1154,23 +1174,44 @@ class _RentalHero extends StatelessWidget {
                     children: [
                       Text(
                         customerName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w900,
-                              color: SifaBrand.charcoal,
+                              color: Colors.white,
                             ),
                       ),
-                      if (addressLabel != null) ...[
-                        const SizedBox(height: 2),
-                        Text(
-                          addressLabel!,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: SifaBrand.textGrey,
+                      if (addressLabel != null &&
+                          addressLabel!.trim().isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.location_on_outlined,
+                              color: SifaBrand.gold,
+                              size: 14,
+                            ),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                addressLabel!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(
+                                      color: Colors.white70,
+                                    ),
                               ),
+                            ),
+                          ],
                         ),
                       ],
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 const StatusPill(
                   label: 'Aktif',
                   tone: AppStatusTone.success,
@@ -1178,75 +1219,107 @@ class _RentalHero extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 13),
+            child: Column(
               children: [
-                Expanded(
-                  child: _HeroMetric(
-                    label: 'Gönderilen',
-                    value: _compactNumber(totals.sent),
-                    icon: Icons.north_east,
-                    background: SifaBrand.successBg,
-                    foreground: SifaBrand.success,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _HeroMetric(
+                        label: 'Gönderilen',
+                        value: _compactNumber(totals.sent),
+                        icon: Icons.north_east,
+                        background: SifaBrand.successBg,
+                        foreground: SifaBrand.success,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: _HeroMetric(
+                        label: 'Gelen',
+                        value: _compactNumber(totals.returned),
+                        icon: Icons.south_west,
+                        background: SifaBrand.infoBg,
+                        foreground: SifaBrand.info,
+                      ),
+                    ),
+                    const SizedBox(width: 7),
+                    Expanded(
+                      child: _HeroMetric(
+                        label: 'Müşteride',
+                        value: _compactNumber(totals.remaining),
+                        icon: Icons.inventory_2_outlined,
+                        background: SifaBrand.goldBg,
+                        foreground: SifaBrand.deepGold,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: _HeroMetric(
-                    label: 'Gelen',
-                    value: _compactNumber(totals.returned),
-                    icon: Icons.south_west,
-                    background: SifaBrand.infoBg,
-                    foreground: SifaBrand.info,
+                const SizedBox(height: 13),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: SifaBrand.ivory,
+                    borderRadius: BorderRadius.circular(13),
+                    border: Border.all(color: SifaBrand.softGrey),
                   ),
-                ),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: _HeroMetric(
-                    label: 'Müşteride',
-                    value: _compactNumber(totals.remaining),
-                    icon: Icons.inventory_2_outlined,
-                    background: SifaBrand.goldBg,
-                    foreground: SifaBrand.deepGold,
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _MetaLine(
+                              icon: Icons.north_east,
+                              text: 'İlk çıkış ${trDate(original)}',
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _MetaLine(
+                              icon: Icons.event_repeat_outlined,
+                              text: 'Sonraki kira ${trDate(nextRenewal)}',
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(
+                            invoice == 'invoice_required'
+                                ? Icons.receipt_long_outlined
+                                : Icons.money_off_outlined,
+                            size: 17,
+                            color: SifaBrand.deepGold,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              invoice == 'invoice_required'
+                                  ? 'Faturalı kiralama'
+                                  : 'Faturasız kiralama',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                          if (onToggleInvoice != null)
+                            TextButton(
+                              onPressed: onToggleInvoice,
+                              child: const Text('Değiştir'),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
-            const Divider(height: 22),
-            Row(
-              children: [
-                Expanded(
-                  child: _MetaLine(
-                    icon: Icons.north_east,
-                    text: 'İlk çıkış ${trDate(original)}',
-                  ),
-                ),
-                Expanded(
-                  child: _MetaLine(
-                    icon: Icons.event_repeat_outlined,
-                    text: 'Sonraki kira ${trDate(nextRenewal)}',
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: ActionChip(
-                avatar: Icon(
-                  invoice == 'invoice_required'
-                      ? Icons.receipt_long_outlined
-                      : Icons.money_off_outlined,
-                  size: 17,
-                ),
-                label: Text(
-                  invoice == 'invoice_required' ? 'Faturalı' : 'Faturasız',
-                ),
-                onPressed: onToggleInvoice,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -1333,7 +1406,7 @@ class _MiniMetric extends StatelessWidget {
           value,
           style: Theme.of(context).textTheme.titleSmall?.copyWith(
                 fontWeight: FontWeight.w900,
-                color: emphasize ? Theme.of(context).colorScheme.primary : null,
+                color: emphasize ? SifaBrand.deepGold : null,
               ),
         ),
       ],
