@@ -6,6 +6,7 @@ import '../services/rental_date_service.dart';
 import '../services/report_download_service.dart';
 import '../services/role_service.dart';
 import '../widgets/status_pill.dart';
+import '../widgets/sifa_brand.dart';
 import 'rental_create_screen.dart';
 import 'rental_tracking_detail_screen.dart';
 import 'sales_screen.dart';
@@ -264,11 +265,11 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               child: Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  gradient: LinearGradient(
+                  borderRadius: BorderRadius.circular(14),
+                  gradient: const LinearGradient(
                     colors: [
-                      Theme.of(context).colorScheme.primary.withOpacity(0.08),
-                      Theme.of(context).colorScheme.surface,
+                      Color(0xFFFFFFFF),
+                      Color(0xFFFFFBEE),
                     ],
                   ),
                 ),
@@ -278,17 +279,16 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        CircleAvatar(
-                          radius: 24,
-                          child: Text(
-                            customer.name.isEmpty
-                                ? '?'
-                                : customer.name.substring(0, 1).toUpperCase(),
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w900,
-                              fontSize: 18,
-                            ),
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: SifaBrand.ivory,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: SifaBrand.softGrey),
                           ),
+                          alignment: Alignment.center,
+                          child: const SifaBuildingMark(size: 32),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -309,9 +309,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                                     .textTheme
                                     .bodyMedium
                                     ?.copyWith(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onSurfaceVariant,
+                                      color: SifaBrand.textGrey,
                                     ),
                               ),
                             ],
