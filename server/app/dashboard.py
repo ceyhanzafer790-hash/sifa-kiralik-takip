@@ -142,6 +142,38 @@ def dashboard_summary(
         cur.execute(
             """
             select
+              rm.id,
+              rm.rental_record_id,
+              rm.movement_type,
+              rm.quantity,
+              rm.movement_date,
+              c.name as customer_name,
+              ca.label as address_label,
+              p.name as product_name,
+              p.unit
+            from rental_movements rm
+            join rental_records rr
+              on rr.id = rm.rental_record_id
+            join customers c
+              on c.id = rr.customer_id
+            left join customer_addresses ca
+              on ca.id = rr.address_id
+            join rental_items ri
+              on ri.id = rm.rental_item_id
+            join products p
+              on p.id = ri.product_id
+            where rm.voided_at is null
+              and rr.deleted_at is null
+              and c.deleted_at is null
+            order by rm.movement_date desc, rm.created_at desc
+            limit 6
+            """
+        )
+        recent_movements = [dict(row) for row in cur.fetchall()]
+
+        cur.execute(
+            """
+            select
               coalesce(
                 sum(
                   greatest(
@@ -303,6 +335,7 @@ def dashboard_summary(
         "active_rental_count": len(rentals),
         "active_rental_item_count": active_items,
         "today_movement_count": today_movements,
+        "recent_movements": recent_movements,
         "renewals": renewals,
         "renewal_due_today_count": sum(
             1 for r in renewals if r["days_until"] == 0
