@@ -596,6 +596,16 @@ class _RentalTrackingDetailScreenState
     List<Map<String, dynamic>> rates,
     AccountTotals accountTotals,
   ) {
+    final visibleItems = widget.focusReturn
+        ? items.where((item) {
+            final initial =
+                (item['initial_quantity'] as num?)?.toDouble() ?? 0;
+            final returned =
+                (item['returned_quantity'] as num?)?.toDouble() ?? 0;
+            return initial - returned > 0;
+          }).toList()
+        : items;
+
     return RefreshIndicator(
       onRefresh: _load,
       child: ListView(
@@ -614,21 +624,27 @@ class _RentalTrackingDetailScreenState
                 ),
               ),
               StatusPill(
-                label: '${items.length} kalem',
+                label: '${visibleItems.length} kalem',
                 tone: AppStatusTone.neutral,
                 compact: true,
               ),
             ],
           ),
           const SizedBox(height: 10),
-          if (items.isEmpty)
-            const _EmptyCard(
-              icon: Icons.inventory_2_outlined,
-              title: 'Malzeme bulunmuyor',
-              subtitle: 'Bu kiralama için kayıtlı malzeme yok.',
+          if (visibleItems.isEmpty)
+            _EmptyCard(
+              icon: widget.focusReturn
+                  ? Icons.task_alt
+                  : Icons.inventory_2_outlined,
+              title: widget.focusReturn
+                  ? 'Müşteride malzeme kalmadı'
+                  : 'Malzeme bulunmuyor',
+              subtitle: widget.focusReturn
+                  ? 'Bu kiralamadaki tüm malzemeler geri alınmış.'
+                  : 'Bu kiralama için kayıtlı malzeme yok.',
             )
           else
-            ...items.map((item) {
+            ...visibleItems.map((item) {
               final initial =
                   (item['initial_quantity'] as num?)?.toDouble() ?? 0;
               final returned =
@@ -701,25 +717,27 @@ class _RentalTrackingDetailScreenState
                               minHeight: 7,
                             ),
                           ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                currentRate == null
-                                    ? 'Fiyat girilmedi'
-                                    : 'Güncel fiyat: ${_money(_double(currentRate['amount']))} ₺ • '
-                                        '${currentRate['rate_type'] == 'fixed_monthly' ? 'Sabit aylık' : 'Birim başına aylık'}',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                  color: currentRate == null
-                                      ? Theme.of(context).colorScheme.error
-                                      : null,
+                        if (!widget.focusReturn) ...[
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  currentRate == null
+                                      ? 'Fiyat girilmedi'
+                                      : 'Güncel fiyat: ${_money(_double(currentRate['amount']))} ₺ • '
+                                          '${currentRate['rate_type'] == 'fixed_monthly' ? 'Sabit aylık' : 'Birim başına aylık'}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                    color: currentRate == null
+                                        ? Theme.of(context).colorScheme.error
+                                        : null,
+                                  ),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                         if (canWrite) ...[
                           const SizedBox(height: 12),
                           Wrap(
