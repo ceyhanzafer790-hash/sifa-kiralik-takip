@@ -16,17 +16,63 @@ class SifaKiralikTakipApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const seed = Color(0xFF24324A);
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Şifa Kiralık Takip',
       theme: ThemeData(
         useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-        inputDecorationTheme: const InputDecorationTheme(
-          filled: true,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: seed,
+          brightness: Brightness.light,
+          surface: const Color(0xFFF7F7F5),
         ),
-        cardTheme: const CardThemeData(
+        scaffoldBackgroundColor: const Color(0xFFF7F7F5),
+        appBarTheme: const AppBarTheme(
+          centerTitle: false,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          backgroundColor: Color(0xFFF7F7F5),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: BorderSide(
+              color: Colors.black.withValues(alpha: 0.08),
+            ),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(14),
+            borderSide: const BorderSide(
+              color: seed,
+              width: 1.5,
+            ),
+          ),
+        ),
+        cardTheme: CardThemeData(
           margin: EdgeInsets.zero,
+          elevation: 0,
+          color: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(18),
+            side: BorderSide(
+              color: Colors.black.withValues(alpha: 0.06),
+            ),
+          ),
+        ),
+        navigationBarTheme: const NavigationBarThemeData(
+          height: 72,
+          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          elevation: 1,
         ),
       ),
       home: const AuthRoot(),
