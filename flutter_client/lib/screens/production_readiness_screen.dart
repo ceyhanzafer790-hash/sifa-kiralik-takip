@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/admin_api_repository.dart';
+import '../widgets/sifa_brand.dart';
 
 class ProductionReadinessScreen extends StatefulWidget {
   const ProductionReadinessScreen({super.key});
@@ -49,7 +50,20 @@ class _ProductionReadinessScreenState
     final ready = data?['ready'] == true;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Üretime Hazırlık')),
+      appBar: AppBar(
+        title: const Text(
+          'Üretime Hazırlık',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
@@ -60,11 +74,25 @@ class _ProductionReadinessScreenState
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    Icon(
-                      ready
-                          ? Icons.verified_outlined
-                          : Icons.build_circle_outlined,
-                      size: 34,
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: ready
+                            ? SifaBrand.successBg
+                            : const Color(0xFFFFF4E5),
+                        borderRadius: BorderRadius.circular(13),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(
+                        ready
+                            ? Icons.verified_outlined
+                            : Icons.build_circle_outlined,
+                        color: ready
+                            ? SifaBrand.success
+                            : const Color(0xFF9A5D00),
+                        size: 26,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -111,9 +139,29 @@ class _ProductionReadinessScreenState
                   _ => Icons.warning_amber_outlined,
                 };
 
+                final foreground = switch (status) {
+                  'pass' => SifaBrand.success,
+                  'fail' => const Color(0xFFA53C3C),
+                  _ => const Color(0xFF9A5D00),
+                };
+                final background = switch (status) {
+                  'pass' => SifaBrand.successBg,
+                  'fail' => const Color(0xFFFFECEC),
+                  _ => const Color(0xFFFFF4E5),
+                };
+
                 return Card(
                   child: ListTile(
-                    leading: Icon(icon),
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: background,
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(icon, color: foreground),
+                    ),
                     title: Text(
                       item['title']?.toString() ?? 'Kontrol',
                       style: const TextStyle(
@@ -129,7 +177,8 @@ class _ProductionReadinessScreenState
                         'fail' => 'EKSİK',
                         _ => 'UYARI',
                       },
-                      style: const TextStyle(
+                      style: TextStyle(
+                        color: foreground,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
