@@ -300,10 +300,14 @@ class _AppShellState extends State<AppShell> {
               _QuickActionTile(
                 icon: Icons.keyboard_return,
                 title: 'Malzeme Geri Al',
-                subtitle: 'Aktif kiralamayı seçip iade hareketi ekle.',
+                subtitle: 'Aktif kiralamayı seçip iade miktarını gir.',
                 onTap: () {
                   Navigator.pop(context);
-                  setState(() => index = 2);
+                  _push(
+                    const RentalsOverviewScreen(
+                      returnMode: true,
+                    ),
+                  );
                 },
               ),
               if (role == AppRole.admin)
