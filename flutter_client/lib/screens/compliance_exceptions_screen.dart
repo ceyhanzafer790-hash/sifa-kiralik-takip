@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../services/document_compliance_repository.dart';
+import '../widgets/sifa_brand.dart';
+import '../widgets/status_pill.dart';
 
 class ComplianceExceptionsScreen extends StatefulWidget {
   const ComplianceExceptionsScreen({super.key});
@@ -71,19 +73,74 @@ class _ComplianceExceptionsScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Belge İstisnaları')),
+      appBar: AppBar(
+        title: const Text(
+          'Belge İstisnaları',
+          style: TextStyle(fontWeight: FontWeight.w900),
+        ),
+        bottom: const PreferredSize(
+          preferredSize: Size.fromHeight(1),
+          child: Divider(
+            height: 1,
+            thickness: 1,
+            color: SifaBrand.gold,
+          ),
+        ),
+      ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(14),
-                child: Text(
-                  'Buradaki kayıtlar belge silmez. Sadece eski arşivde '
-                  'doğrulanmış belge için eksik-belge alarmını istisna eder.',
-                ),
+            Card(
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Container(
+                    width: double.infinity,
+                    color: SifaBrand.charcoal,
+                    padding: const EdgeInsets.fromLTRB(16, 15, 16, 15),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.verified_outlined,
+                          color: SifaBrand.gold,
+                          size: 27,
+                        ),
+                        SizedBox(width: 11),
+                        Expanded(
+                          child: Text(
+                            'Eski arşivde doğrulanmış belgeler için verilmiş istisnaları yönet.',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(13),
+                    child: Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Aktif istisna',
+                            style: TextStyle(fontWeight: FontWeight.w800),
+                          ),
+                        ),
+                        StatusPill(
+                          label: '${rows.length}',
+                          tone: rows.isEmpty
+                              ? AppStatusTone.success
+                              : AppStatusTone.info,
+                          compact: true,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
             if (loading) const LinearProgressIndicator(),
@@ -98,7 +155,19 @@ class _ComplianceExceptionsScreenState
             ...rows.map(
               (r) => Card(
                 child: ListTile(
-                  leading: const Icon(Icons.verified_outlined),
+                  leading: Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: SifaBrand.infoBg,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.verified_outlined,
+                      color: SifaBrand.info,
+                    ),
+                  ),
                   title: Text(_label(r['document_type']?.toString())),
                   subtitle: Text(
                     '${r['reason']}\n'
@@ -108,7 +177,10 @@ class _ComplianceExceptionsScreenState
                   trailing: IconButton(
                     tooltip: 'İstisnayı geri al',
                     onPressed: () => _revoke(r),
-                    icon: const Icon(Icons.undo),
+                    icon: const Icon(
+                      Icons.undo,
+                      color: SifaBrand.deepGold,
+                    ),
                   ),
                 ),
               ),
