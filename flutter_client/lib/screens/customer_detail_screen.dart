@@ -431,10 +431,7 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               FilledButton.icon(
                 onPressed: _newRental,
                 icon: const Icon(Icons.add_business_outlined),
-                label: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 12),
-                  child: Text('YENİ KİRALAMA'),
-                ),
+                label: const Text('Yeni Kiralama Başlat'),
               ),
             ],
             const SizedBox(height: 22),
@@ -496,6 +493,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                           children: [
                             Row(
                               children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: SifaBrand.gold.withOpacity(0.13),
+                                    borderRadius: BorderRadius.circular(11),
+                                  ),
+                                  alignment: Alignment.center,
+                                  child: const SifaBuildingMark(
+                                    size: 25,
+                                    gold: true,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
                                 Expanded(
                                   child: Text(
                                     rental.addressLabel ?? 'Şantiye seçilmedi',
@@ -513,9 +524,24 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(
-                              'İlk çıkış: ${trDate(rental.outboundDate)}',
-                              style: Theme.of(context).textTheme.bodySmall,
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.north_east,
+                                  size: 15,
+                                  color: SifaBrand.deepGold,
+                                ),
+                                const SizedBox(width: 5),
+                                Text(
+                                  'İlk çıkış: ${trDate(rental.outboundDate)}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 10),
                             if (rental.summaries.isEmpty)
@@ -541,14 +567,28 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                             const SizedBox(height: 10),
                             Row(
                               children: [
-                                Text(
-                                  'Toplam kalan: ${_number(rental.remainingTotal)}',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w900,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: SifaBrand.goldBg,
+                                    borderRadius: BorderRadius.circular(999),
+                                  ),
+                                  child: Text(
+                                    'Müşteride: ${_number(rental.remainingTotal)}',
+                                    style: const TextStyle(
+                                      color: SifaBrand.deepGold,
+                                      fontWeight: FontWeight.w900,
+                                    ),
                                   ),
                                 ),
                                 const Spacer(),
-                                const Icon(Icons.chevron_right),
+                                const Icon(
+                                  Icons.chevron_right,
+                                  color: SifaBrand.deepGold,
+                                ),
                               ],
                             ),
                           ],
@@ -570,12 +610,28 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.sell_outlined),
+                    leading: Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: SifaBrand.gold.withOpacity(0.13),
+                        borderRadius: BorderRadius.circular(11),
+                      ),
+                      alignment: Alignment.center,
+                      child: const Icon(
+                        Icons.sell_outlined,
+                        color: SifaBrand.deepGold,
+                        size: 20,
+                      ),
+                    ),
                     title: const Text(
                       'Satılanlar',
                       style: TextStyle(fontWeight: FontWeight.w800),
                     ),
-                    trailing: const Icon(Icons.chevron_right),
+                    trailing: const Icon(
+                      Icons.chevron_right,
+                      color: SifaBrand.deepGold,
+                    ),
                     onTap: () {
                       Navigator.of(context).push(
                         MaterialPageRoute(
@@ -590,7 +646,20 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                   if (isAdmin) ...[
                     const Divider(height: 1, indent: 56),
                     ListTile(
-                      leading: const Icon(Icons.assessment_outlined),
+                      leading: Container(
+                        width: 38,
+                        height: 38,
+                        decoration: BoxDecoration(
+                          color: SifaBrand.gold.withOpacity(0.13),
+                          borderRadius: BorderRadius.circular(11),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Icon(
+                          Icons.assessment_outlined,
+                          color: SifaBrand.deepGold,
+                          size: 20,
+                        ),
+                      ),
                       title: const Text(
                         'Müşteri Hesap Ekstresi',
                         style: TextStyle(fontWeight: FontWeight.w800),
@@ -598,7 +667,10 @@ class _CustomerDetailScreenState extends State<CustomerDetailScreen> {
                       subtitle: const Text(
                         'Kiralama, fatura, tahsilat ve bakiye raporu',
                       ),
-                      trailing: const Icon(Icons.download_outlined),
+                      trailing: const Icon(
+                        Icons.download_outlined,
+                        color: SifaBrand.deepGold,
+                      ),
                       onTap: _downloadStatement,
                     ),
                   ],
