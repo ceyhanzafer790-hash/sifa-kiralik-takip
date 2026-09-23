@@ -11,10 +11,12 @@ import 'billing_period_screen.dart';
 
 class RentalTrackingDetailScreen extends StatefulWidget {
   final String recordId;
+  final bool focusReturn;
 
   const RentalTrackingDetailScreen({
     super.key,
     required this.recordId,
+    this.focusReturn = false,
   });
 
   @override
@@ -99,11 +101,26 @@ class _RentalTrackingDetailScreenState
                   controller: qty,
                   keyboardType:
                       const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     labelText: 'Gelen miktar',
+                    suffixText: _unit(item['unit']),
                   ),
                 ),
-                const SizedBox(height: 10),
+                const SizedBox(height: 7),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () {
+                      qty.text = _n(remaining);
+                      qty.selection = TextSelection.fromPosition(
+                        TextPosition(offset: qty.text.length),
+                      );
+                    },
+                    icon: const Icon(Icons.done_all, size: 18),
+                    label: const Text('Tamamını Geri Al'),
+                  ),
+                ),
+                const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
                   value: condition,
                   decoration: const InputDecoration(
@@ -158,7 +175,16 @@ class _RentalTrackingDetailScreenState
             FilledButton(
               onPressed: () {
                 final q = double.tryParse(qty.text.replaceAll(',', '.'));
-                if (q == null || q <= 0 || q > remaining) return;
+                if (q == null || q <= 0 || q > remaining) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        '0 ile ${_n(remaining)} arasında bir miktar gir.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
                 Navigator.pop(
                   context,
                   {
@@ -382,7 +408,11 @@ class _RentalTrackingDetailScreenState
 
     if (detail == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Kiralama Detayı')),
+        appBar: AppBar(
+          title: Text(
+            widget.focusReturn ? 'Malzeme Geri Al' : 'Kiralama Detayı',
+          ),
+        ),
         body: Center(child: Text(error ?? 'Kayıt bulunamadı.')),
       );
     }
@@ -421,9 +451,9 @@ class _RentalTrackingDetailScreenState
       length: 5,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text(
-            'Kiralama',
-            style: TextStyle(fontWeight: FontWeight.w900),
+          title: Text(
+            widget.focusReturn ? 'Malzeme Geri Al' : 'Kiralama',
+            style: const TextStyle(fontWeight: FontWeight.w900),
           ),
           bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
@@ -451,6 +481,34 @@ class _RentalTrackingDetailScreenState
         body: Column(
           children: [
             if (loading) const LinearProgressIndicator(minHeight: 2),
+            if (widget.focusReturn)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: SifaBrand.goldBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: SifaBrand.gold.withOpacity(0.35),
+                  ),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.keyboard_return,
+                      color: SifaBrand.deepGold,
+                    ),
+                    SizedBox(width: 9),
+                    Expanded(
+                      child: Text(
+                        'Geri gelen malzemeyi aşağıdan seç ve miktarı gir.',
+                        style: TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
               child: _RentalHero(
@@ -465,28 +523,29 @@ class _RentalTrackingDetailScreenState
                     canWrite ? () => _toggleInvoice(invoice) : null,
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: FilledButton.icon(
-                      onPressed: _shareWhatsApp,
-                      icon: const Icon(Icons.chat_bubble_outline),
-                      label: const Text('WhatsApp'),
+            if (!widget.focusReturn)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: FilledButton.icon(
+                        onPressed: _shareWhatsApp,
+                        icon: const Icon(Icons.chat_bubble_outline),
+                        label: const Text('WhatsApp'),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: _sharePdf,
-                      icon: const Icon(Icons.picture_as_pdf_outlined),
-                      label: const Text('PDF Özeti'),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        onPressed: _sharePdf,
+                        icon: const Icon(Icons.picture_as_pdf_outlined),
+                        label: const Text('PDF Özeti'),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
             const SizedBox(height: 12),
             const TabBar(
               isScrollable: true,
@@ -538,7 +597,9 @@ class _RentalTrackingDetailScreenState
             children: [
               Expanded(
                 child: Text(
-                  'Kiradaki Malzemeler',
+                  widget.focusReturn
+                      ? 'İade Edilecek Malzemeyi Seç'
+                      : 'Kiradaki Malzemeler',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w900,
                       ),
@@ -663,11 +724,13 @@ class _RentalTrackingDetailScreenState
                                 icon: const Icon(Icons.keyboard_return),
                                 label: const Text('Malzeme Geri Al'),
                               ),
-                              OutlinedButton.icon(
-                                onPressed: () => _addRate(item),
-                                icon: const Icon(Icons.price_change_outlined),
-                                label: const Text('Fiyat Güncelle'),
-                              ),
+                              if (!widget.focusReturn)
+                                OutlinedButton.icon(
+                                  onPressed: () => _addRate(item),
+                                  icon:
+                                      const Icon(Icons.price_change_outlined),
+                                  label: const Text('Fiyat Güncelle'),
+                                ),
                             ],
                           ),
                         ],
