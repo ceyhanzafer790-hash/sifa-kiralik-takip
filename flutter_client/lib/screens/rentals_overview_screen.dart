@@ -2,7 +2,15 @@ import 'package:flutter/material.dart';
 
 import '../services/local_domain_cache.dart';
 import '../services/rental_date_service.dart';
+import '../widgets/status_pill.dart';
 import 'rental_tracking_detail_screen.dart';
+
+enum _RentalFilter {
+  active,
+  completed,
+  missingDocument,
+  receivable,
+}
 
 class RentalsOverviewScreen extends StatefulWidget {
   const RentalsOverviewScreen({super.key});
@@ -16,6 +24,7 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
 
   bool loading = true;
   String query = '';
+  _RentalFilter filter = _RentalFilter.active;
   List<_RentalOverviewRow> rows = [];
 
   @override
@@ -25,7 +34,7 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
   }
 
   Future<void> _load() async {
-    setState(() => loading = true);
+    if (mounted) setState(() => loading = true);
 
     final customers = await cache.customers();
     final products = await cache.products();
@@ -36,14 +45,19 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
     for (final customer in customers) {
       final rentals = await cache.rentalsForCustomer(customer.id);
 
-      for (final rental in rentals.where((r) => r.status == 'active')) {
-        final address =
-            rental.addressId == null ? null : await cache.address(rental.addressId!);
+      for (final rental in rentals) {
+        final address = rental.addressId == null
+            ? null
+            : await cache.address(rental.addressId!);
         final items = await cache.rentalItems(rental.id);
         final movements = await cache.movements(rental.id);
+        final documents = await cache.documents(rental.id);
+        final pendingDocuments = await cache.pendingDocuments(rental.id);
+        final billing = await cache.billingPeriods(rental.id);
 
         final summaries = <String>[];
         var activeItemCount = 0;
+        double remainingTotal = 0;
 
         for (final item in items) {
           final returned = movements
@@ -59,11 +73,50 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
           if (remaining <= 0) continue;
 
           activeItemCount++;
+          remainingTotal += remaining;
           final product = productById[item.productId];
           summaries.add(
             '${product?.name ?? 'Malzeme'}: ${_number(remaining.toDouble())} '
             '${_unitLabel(product?.unit)}',
           );
+        }
+
+        bool hasDocument(String type, {String? movementId}) {
+          final synced = documents.any(
+            (d) =>
+                d.documentType == type &&
+                (movementId == null || d.movementId == movementId),
+          );
+          final queued = pendingDocuments.any(
+            (d) =>
+                d['document_type'] == type &&
+                (movementId == null ||
+                    d['rental_movement_id']?.toString() == movementId),
+          );
+          return synced || queued;
+        }
+
+        var missingDocumentCount = 0;
+        if (!hasDocument('contract')) missingDocumentCount++;
+
+        for (final movement in movements) {
+          final requiredType = movement.movementType == 'outbound'
+              ? 'outbound_delivery'
+              : movement.movementType == 'inbound_return'
+                  ? 'inbound_delivery'
+                  : null;
+          if (requiredType == null) continue;
+          if (!hasDocument(requiredType, movementId: movement.id)) {
+            missingDocumentCount++;
+          }
+        }
+
+        double receivableBalance = 0;
+        for (final period in billing) {
+          final billed = period.billedAmount ?? 0;
+          final paid = period.paidAmount ?? 0;
+          receivableBalance +=
+              (billed - paid).clamp(0.0, double.infinity).toDouble();
         }
 
         result.add(
@@ -74,7 +127,11 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
             outboundDate: rental.originalOutboundDate,
             summaries: summaries,
             activeItemCount: activeItemCount,
+            remainingTotal: remainingTotal,
             pendingSync: rental.pendingSync,
+            active: rental.status == 'active',
+            missingDocumentCount: missingDocumentCount,
+            receivableBalance: receivableBalance,
           ),
         );
       }
@@ -90,15 +147,29 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  List<_RentalOverviewRow> get _filtered {
     final q = query.trim().toLowerCase();
-    final filtered = rows.where((row) {
-      if (q.isEmpty) return true;
-      return row.customerName.toLowerCase().contains(q) ||
+
+    return rows.where((row) {
+      final matchesQuery = q.isEmpty ||
+          row.customerName.toLowerCase().contains(q) ||
           (row.addressLabel?.toLowerCase().contains(q) ?? false) ||
           row.summaries.any((s) => s.toLowerCase().contains(q));
+
+      if (!matchesQuery) return false;
+
+      return switch (filter) {
+        _RentalFilter.active => row.active,
+        _RentalFilter.completed => !row.active,
+        _RentalFilter.missingDocument => row.missingDocumentCount > 0,
+        _RentalFilter.receivable => row.receivableBalance > 0,
+      };
     }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final filtered = _filtered;
 
     return Scaffold(
       body: RefreshIndicator(
@@ -107,32 +178,25 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             SliverPadding(
-              padding: const EdgeInsets.fromLTRB(16, 18, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
               sliver: SliverToBoxAdapter(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Kiralamalar',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.w900,
-                          ),
+                      style:
+                          Theme.of(context).textTheme.headlineMedium?.copyWith(
+                                fontWeight: FontWeight.w900,
+                              ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Müşteride bulunan kiralıkları tek ekrandan takip et.',
+                      'Kimde ne var, ne eksik ve hangi hesap açık tek yerde.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
                           ),
-                    ),
-                    const SizedBox(height: 14),
-                    TextField(
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.search),
-                        hintText: 'Müşteri, şantiye veya malzeme ara',
-                        border: OutlineInputBorder(),
-                      ),
-                      onChanged: (value) => setState(() => query = value),
                     ),
                     if (loading) ...[
                       const SizedBox(height: 10),
@@ -142,27 +206,54 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                 ),
               ),
             ),
+            SliverPersistentHeader(
+              pinned: true,
+              delegate: _SearchFilterHeader(
+                query: query,
+                filter: filter,
+                onQueryChanged: (value) => setState(() => query = value),
+                onFilterChanged: (value) => setState(() => filter = value),
+                counts: {
+                  _RentalFilter.active: rows.where((r) => r.active).length,
+                  _RentalFilter.completed: rows.where((r) => !r.active).length,
+                  _RentalFilter.missingDocument:
+                      rows.where((r) => r.missingDocumentCount > 0).length,
+                  _RentalFilter.receivable:
+                      rows.where((r) => r.receivableBalance > 0).length,
+                },
+              ),
+            ),
             if (!loading && filtered.isEmpty)
               SliverFillRemaining(
                 hasScrollBody: false,
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(24),
-                    child: Text(
-                      q.isEmpty
-                          ? 'Aktif kiralama görünmüyor.'
-                          : 'Aramana uyan kiralama bulunamadı.',
-                      textAlign: TextAlign.center,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.filter_alt_off_outlined,
+                          size: 46,
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Bu filtrede kiralama bulunamadı.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontWeight: FontWeight.w800),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               )
             else
               SliverPadding(
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 100),
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 110),
                 sliver: SliverList.separated(
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 9),
                   itemBuilder: (context, index) {
                     final row = filtered[index];
                     final nextRental =
@@ -170,7 +261,7 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
 
                     return Card(
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(18),
                         onTap: () async {
                           await Navigator.of(context).push(
                             MaterialPageRoute(
@@ -203,16 +294,20 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                                                 fontWeight: FontWeight.w900,
                                               ),
                                         ),
-                                        if (row.addressLabel != null)
-                                          Padding(
-                                            padding:
-                                                const EdgeInsets.only(top: 2),
-                                            child: Text(row.addressLabel!),
-                                          ),
+                                        if (row.addressLabel != null) ...[
+                                          const SizedBox(height: 2),
+                                          Text(row.addressLabel!),
+                                        ],
                                       ],
                                     ),
                                   ),
-                                  const Chip(label: Text('Aktif')),
+                                  StatusPill(
+                                    label: row.active ? 'Aktif' : 'Tamamlandı',
+                                    tone: row.active
+                                        ? AppStatusTone.success
+                                        : AppStatusTone.neutral,
+                                    compact: true,
+                                  ),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -235,35 +330,66 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
                                     ),
                               if (row.summaries.length > 3)
                                 Text(
-                                  '+${row.summaries.length - 3} malzeme daha',
+                                  '+${row.summaries.length - 3} kalem daha',
                                   style: Theme.of(context).textTheme.bodySmall,
                                 ),
                               const Divider(height: 24),
                               Wrap(
-                                spacing: 12,
-                                runSpacing: 6,
+                                spacing: 8,
+                                runSpacing: 8,
+                                crossAxisAlignment: WrapCrossAlignment.center,
                                 children: [
                                   _Meta(
                                     icon: Icons.north_east,
                                     text:
                                         'İlk çıkış ${trDate(row.outboundDate)}',
                                   ),
-                                  _Meta(
-                                    icon: Icons.event_repeat_outlined,
-                                    text:
-                                        'Sonraki kira ${trDate(nextRental)}',
-                                  ),
+                                  if (row.active)
+                                    _Meta(
+                                      icon: Icons.event_repeat_outlined,
+                                      text:
+                                          'Sonraki kira ${trDate(nextRental)}',
+                                    ),
                                   _Meta(
                                     icon: Icons.inventory_2_outlined,
-                                    text: '${row.activeItemCount} aktif kalem',
+                                    text:
+                                        '${row.activeItemCount} aktif kalem',
                                   ),
+                                  if (row.missingDocumentCount > 0)
+                                    StatusPill(
+                                      label:
+                                          '${row.missingDocumentCount} eksik belge',
+                                      tone: AppStatusTone.warning,
+                                      icon: Icons.description_outlined,
+                                      compact: true,
+                                    ),
+                                  if (row.receivableBalance > 0)
+                                    StatusPill(
+                                      label:
+                                          '${_money(row.receivableBalance)} ₺ açık',
+                                      tone: AppStatusTone.danger,
+                                      icon:
+                                          Icons.account_balance_wallet_outlined,
+                                      compact: true,
+                                    ),
                                   if (row.pendingSync)
-                                    const _Meta(
+                                    const StatusPill(
+                                      label: 'Senkron bekliyor',
+                                      tone: AppStatusTone.info,
                                       icon: Icons.cloud_upload_outlined,
-                                      text: 'Senkron bekliyor',
+                                      compact: true,
                                     ),
                                 ],
                               ),
+                              if (row.remainingTotal > 0) ...[
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Toplam kalan miktar: ${_number(row.remainingTotal)}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -280,7 +406,22 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
 
   static String _number(double value) => value == value.roundToDouble()
       ? value.toInt().toString()
-      : value.toStringAsFixed(2).replaceFirst(RegExp(r'0+$'), '').replaceFirst(RegExp(r'\.$'), '');
+      : value
+          .toStringAsFixed(2)
+          .replaceFirst(RegExp(r'0+$'), '')
+          .replaceFirst(RegExp(r'\.$'), '');
+
+  static String _money(double value) {
+    final fixed = value.toStringAsFixed(2);
+    final parts = fixed.split('.');
+    final chars = parts[0].split('').reversed.toList();
+    final groups = <String>[];
+    for (var i = 0; i < chars.length; i += 3) {
+      groups.add(chars.skip(i).take(3).toList().reversed.join());
+    }
+    final whole = groups.reversed.join('.');
+    return parts[1] == '00' ? whole : '$whole,${parts[1]}';
+  }
 
   static String _unitLabel(String? unit) => switch (unit) {
         'sheet' => 'Levha',
@@ -294,6 +435,112 @@ class _RentalsOverviewScreenState extends State<RentalsOverviewScreen> {
       };
 }
 
+class _SearchFilterHeader extends SliverPersistentHeaderDelegate {
+  final String query;
+  final _RentalFilter filter;
+  final ValueChanged<String> onQueryChanged;
+  final ValueChanged<_RentalFilter> onFilterChanged;
+  final Map<_RentalFilter, int> counts;
+
+  const _SearchFilterHeader({
+    required this.query,
+    required this.filter,
+    required this.onQueryChanged,
+    required this.onFilterChanged,
+    required this.counts,
+  });
+
+  @override
+  double get minExtent => 122;
+
+  @override
+  double get maxExtent => 122;
+
+  @override
+  Widget build(
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
+    return Material(
+      color: Theme.of(context).scaffoldBackgroundColor,
+      elevation: overlapsContent ? 1 : 0,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+        child: Column(
+          children: [
+            SizedBox(
+              height: 48,
+              child: TextFormField(
+                initialValue: query,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search),
+                  hintText: 'Müşteri, şantiye veya malzeme ara',
+                  contentPadding: EdgeInsets.symmetric(vertical: 10),
+                ),
+                onChanged: onQueryChanged,
+              ),
+            ),
+            const SizedBox(height: 7),
+            SizedBox(
+              height: 42,
+              child: ListView(
+                scrollDirection: Axis.horizontal,
+                children: [
+                  _filterChip(
+                    _RentalFilter.active,
+                    'Aktif',
+                    Icons.circle_outlined,
+                  ),
+                  _filterChip(
+                    _RentalFilter.completed,
+                    'Tamamlandı',
+                    Icons.check_circle_outline,
+                  ),
+                  _filterChip(
+                    _RentalFilter.missingDocument,
+                    'Eksik Belgeli',
+                    Icons.description_outlined,
+                  ),
+                  _filterChip(
+                    _RentalFilter.receivable,
+                    'Tahsilat Bekleyen',
+                    Icons.payments_outlined,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _filterChip(
+    _RentalFilter value,
+    String label,
+    IconData icon,
+  ) {
+    final selected = filter == value;
+    return Padding(
+      padding: const EdgeInsets.only(right: 7),
+      child: ChoiceChip(
+        selected: selected,
+        avatar: Icon(icon, size: 16),
+        label: Text('$label (${counts[value] ?? 0})'),
+        onSelected: (_) => onFilterChanged(value),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRebuild(covariant _SearchFilterHeader oldDelegate) {
+    return oldDelegate.query != query ||
+        oldDelegate.filter != filter ||
+        oldDelegate.counts.toString() != counts.toString();
+  }
+}
+
 class _RentalOverviewRow {
   final String id;
   final String customerName;
@@ -301,7 +548,11 @@ class _RentalOverviewRow {
   final DateTime outboundDate;
   final List<String> summaries;
   final int activeItemCount;
+  final double remainingTotal;
   final bool pendingSync;
+  final bool active;
+  final int missingDocumentCount;
+  final double receivableBalance;
 
   const _RentalOverviewRow({
     required this.id,
@@ -310,7 +561,11 @@ class _RentalOverviewRow {
     required this.outboundDate,
     required this.summaries,
     required this.activeItemCount,
+    required this.remainingTotal,
     required this.pendingSync,
+    required this.active,
+    required this.missingDocumentCount,
+    required this.receivableBalance,
   });
 }
 
