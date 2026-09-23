@@ -2458,6 +2458,49 @@ def stock_write_off(
         }
 
 
+@app.get("/stock/summary")
+def stock_summary(user=Depends(current_user)):
+    with db() as (_, cur):
+        cur.execute(
+            """
+            select
+              product_id,
+              product_name,
+              category,
+              unit,
+              trade_mode,
+              stock_confidence,
+              last_count_at,
+              available_quantity,
+              repair_quantity,
+              scrap_quantity,
+              lost_quantity
+            from v_stock_summary
+            order by product_name
+            """
+        )
+        rows = cur.fetchall()
+
+    return [
+        {
+            "product_id": str(row["product_id"]),
+            "product_name": row["product_name"],
+            "category": row["category"],
+            "unit": row["unit"],
+            "trade_mode": row["trade_mode"],
+            "available": row["available_quantity"],
+            "repair": row["repair_quantity"],
+            "scrap": row["scrap_quantity"],
+            "lost": row["lost_quantity"],
+            "last_count": row["last_count_at"],
+            "confidence": row["stock_confidence"] or (
+                "counted" if row["last_count_at"] else "estimated"
+            ),
+        }
+        for row in rows
+    ]
+
+
 @app.get("/stock/products/{product_id}/summary")
 def stock_product_summary(product_id: str, user=Depends(current_user)):
     with db() as (_, cur):
