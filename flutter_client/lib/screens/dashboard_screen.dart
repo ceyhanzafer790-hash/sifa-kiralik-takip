@@ -6,8 +6,8 @@ import '../services/dashboard_api_repository.dart';
 import '../services/rental_date_service.dart';
 import '../services/role_service.dart';
 import '../widgets/sifa_brand.dart';
-import 'document_compliance_screen.dart';
 import 'global_search_screen.dart';
+import 'customer_list_screen.dart';
 import 'overdue_receivables_screen.dart';
 import 'receivables_screen.dart';
 import 'reminder_center_screen.dart';
@@ -177,7 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   value: _count(d['customer_count']),
                   subtitle: 'Kayıtlı müşteri',
                   icon: Icons.people_alt_outlined,
-                  onTap: () => _open(const RentalsOverviewScreen()),
+                  onTap: () => _open(const CustomerListScreen()),
                 ),
                 _MetricCard(
                   width: cardWidth,
@@ -193,7 +193,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   value: _count(d['active_rental_item_count']),
                   subtitle: 'Aktif malzeme kalemi',
                   icon: Icons.apartment_outlined,
-                  onTap: () => _open(const ReminderCenterScreen()),
+                  onTap: () => _open(const RentalsOverviewScreen()),
                 ),
                 _MetricCard(
                   width: cardWidth,
