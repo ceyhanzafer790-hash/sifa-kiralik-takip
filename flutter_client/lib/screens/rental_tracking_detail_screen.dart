@@ -1524,6 +1524,21 @@ class _TimelineTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final timelineColor = switch (tone) {
+      AppStatusTone.success => SifaBrand.success,
+      AppStatusTone.info => SifaBrand.info,
+      AppStatusTone.warning => const Color(0xFF9A5D00),
+      AppStatusTone.danger => const Color(0xFFA53C3C),
+      AppStatusTone.neutral => SifaBrand.textGrey,
+    };
+    final timelineBackground = switch (tone) {
+      AppStatusTone.success => SifaBrand.successBg,
+      AppStatusTone.info => SifaBrand.infoBg,
+      AppStatusTone.warning => const Color(0xFFFFF4E5),
+      AppStatusTone.danger => const Color(0xFFFFECEC),
+      AppStatusTone.neutral => SifaBrand.ivory,
+    };
+
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1536,35 +1551,17 @@ class _TimelineTile extends StatelessWidget {
                   width: 32,
                   height: 32,
                   decoration: BoxDecoration(
-                    color: switch (tone) {
-                      AppStatusTone.success => SifaBrand.successBg,
-                      AppStatusTone.info => SifaBrand.infoBg,
-                      AppStatusTone.warning => const Color(0xFFFFF4E5),
-                      AppStatusTone.danger => const Color(0xFFFFECEC),
-                      AppStatusTone.neutral => SifaBrand.ivory,
-                    },
+                    color: timelineBackground,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: switch (tone) {
-                        AppStatusTone.success => SifaBrand.success,
-                        AppStatusTone.info => SifaBrand.info,
-                        AppStatusTone.warning => const Color(0xFF9A5D00),
-                        AppStatusTone.danger => const Color(0xFFA53C3C),
-                        AppStatusTone.neutral => SifaBrand.softGrey,
-                      }.withOpacity(0.28),
+                      color: timelineColor.withOpacity(0.28),
                     ),
                   ),
                   alignment: Alignment.center,
                   child: Icon(
                     icon,
                     size: 17,
-                    color: switch (tone) {
-                      AppStatusTone.success => SifaBrand.success,
-                      AppStatusTone.info => SifaBrand.info,
-                      AppStatusTone.warning => const Color(0xFF9A5D00),
-                      AppStatusTone.danger => const Color(0xFFA53C3C),
-                      AppStatusTone.neutral => SifaBrand.textGrey,
-                    },
+                    color: timelineColor,
                   ),
                 ),
                 if (!isLast)
