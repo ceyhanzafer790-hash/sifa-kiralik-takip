@@ -4,7 +4,12 @@ import '../services/customer_api_repository.dart';
 import '../widgets/sifa_brand.dart';
 
 class CustomerCreateScreen extends StatefulWidget {
-  const CustomerCreateScreen({super.key});
+  final bool continueAfterSave;
+
+  const CustomerCreateScreen({
+    super.key,
+    this.continueAfterSave = false,
+  });
 
   @override
   State<CustomerCreateScreen> createState() => _CustomerCreateScreenState();
@@ -205,7 +210,11 @@ class _CustomerCreateScreenState extends State<CustomerCreateScreen> {
                   )
                 : const Icon(Icons.check_circle_outline),
             label: Text(
-              saving ? 'Kaydediliyor…' : 'Müşteriyi Kaydet ve Devam Et',
+              saving
+                  ? 'Kaydediliyor…'
+                  : widget.continueAfterSave
+                      ? 'Müşteriyi Kaydet ve Devam Et'
+                      : 'Müşteriyi Kaydet',
             ),
           ),
         ],
